@@ -1,0 +1,81 @@
+
+XZ Embedded
+===========
+
+    XZ Embedded is a relatively small, limited implementation of the .xz
+    file format. Currently only decoding is implemented.
+
+    XZ Embedded was written for use in the Linux kernel, but the code can
+    be easily used in other environments too, including regular userspace
+    applications.
+
+    This README contains information that is useful only when the copy
+    of XZ Embedded isn't part of the Linux kernel tree. You should also
+    read linux/Documentation/xz.txt even if you aren't using XZ Embedded
+    as part of Linux; information in that file is not repeated in this
+    README.
+
+Compiling the Linux kernel module
+
+    cd linux/lib/xz
+    make -C /path/to/kernel/source \
+            CONFIG_XZ_DEC=m KCPPFLAGS=-I"$(pwd)/../../include" M="$(pwd)"
+
+    The xz_dec module depends on crc32 module, so make sure that you have
+    it enabled (CONFIG_CRC32).
+
+Compiler requirements
+
+    XZ Embedded should compile as either GNU-C89 (used in the Linux
+    kernel) or with any C99 compiler. Getting the code to compile with
+    non-GNU C89 compiler or a C++ compiler should be quite easy as
+    long as there is a data type for unsigned 64-bit integer (or the
+    code is modified not to support large files, which needs some more
+    care than just using 32-bit integer instead of 64-bit).
+
+    If you use GCC, try to use a recent version. For example, on x86,
+    xz_dec_lzma2.c compiled with GCC 3.3.6 is 15-25 % slower than when
+    compiled with GCC 4.3.3.
+
+Embedding into userspace applications
+
+    To embed the XZ decoder, copy the following files into a single
+    directory in your source code tree:
+
+        linux/include/linux/xz.h
+        linux/lib/xz/xz_crc32.c
+        linux/lib/xz/xz_dec_lzma2.c
+        linux/lib/xz/xz_dec_stream.c
+        linux/lib/xz/xz_lzma2.h
+        linux/lib/xz/xz_private.h
+        linux/lib/xz/xz_stream.h
+
+    Alternatively, xz.h may be placed into a different directory but then
+    that directory must be in the compiler include path when compiling
+    the .c files.
+
+    Your code should use only the functions declared in xz.h. The rest of
+    the .h files are meant only for internal use in XZ Embedded.
+
+    If you are including XZ Embedded into a shared library, you very
+    probably should rename the xz_* functions to prevent symbol
+    conflicts in case your library is linked against some other library
+    or application that also has XZ Embedded in it (which may even be
+    a different version of XZ Embedded). TODO: Provide an easy way
+    to do this.
+
+    NOTE: Please don't create a shared library of XZ Embedded itself
+    unless it is fine to rebuild everything depending on that shared
+    library everytime you upgrade to a newer version of XZ Embedded.
+    There are no API or ABI stability guarantees between different
+    versions of XZ Embedded.
+
+Specifying the calling convention
+
+    XZ_FUNC macro was included to support declaring functions with __init
+    in Linux. Outside Linux, it can be used to specify the calling
+    convention on systems that support multiple calling conventions.
+    For example, on Windows, you may make all functions to use the stdcall
+    calling convention by defining XZ_FUNC=__stdcall when building and
+    using the functions from XZ Embedded.
+

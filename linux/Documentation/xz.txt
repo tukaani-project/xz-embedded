@@ -1,0 +1,84 @@
+
+XZ data compression in Linux
+============================
+
+    The xz_dec module provides XZ decoder which supports the LZMA2
+    filter and CRC32 for integrity checking. The usage of the xz_dec
+    module is documented in include/linux/xz.h.
+
+Userspace tools
+
+    XZ Utils include a zlib-like compression library and a gzip-like
+    command line tool. XZ Utils can be downloaded from
+    <http://tukaani.org/xz/>. From the same webiste, you can also
+    find latest development versions of the XZ code used in Linux,
+    and information how to use that code outside the Linux kernel too.
+
+Notes on compression options
+
+    Since the XZ implementation in the kernel supports only streams with
+    no integrity check or CRC32, make sure that you don't use some other
+    integrity check type when encoding files that are supposed to be
+    decoded by the kernel. In liblzma, you need to use either
+    LZMA_CHECK_NONE or LZMA_CHECK_CRC32 when encoding. In the xz command
+    line tool, use --check=none or --check=crc32 (-Cnone and -Ccrc32 are
+    the short option counterparts).
+
+    Using CRC32 is strongly recommended unless there is some other layer
+    which will verify the integrity of the uncompressed data anyway.
+    Double checking the integrity would probably be waste of CPU cycles,
+    so feel free to use LZMA_CHECK_NONE or --check=none. Note that the
+    headers will always have a CRC32 which will be validated by the
+    decoder; you can only change the integrity check type (or disable it)
+    for the actual uncompressed data.
+
+    In userspace, LZMA2 is typically used with dictionary sizes of several
+    megabytes. The decoder needs to have the dictionary in RAM, thus big
+    dictionaries cannot be used for files that are intended to be decoded
+    by the kernel. 1 MiB is probably the maximum reasonable dictionary
+    size for in-kernel use. The presets in XZ Utils may not be optimal
+    when creating files for the kernel, so don't hesitate to use custom
+    settings. Example:
+
+        xz --check=crc32 --lzma2=dict=128KiB,nice=273,depth=512 inputfile
+
+    An exception to above dictionary size limitation is when the decoder
+    is used in single-call mode. Compressing the kernel itself and
+    initramfs are examples of this situation. In this case the memory
+    usage doesn't depend on the dictionary size, and it is perfectly fine
+    to use a big dictionary: for maximum compression, the dictionary
+    should be at least as big as the uncompressed data itself.
+
+Future plans
+
+    Add support for BCJ (Branch/Call/Jump) filters for different
+    instruction sets. This could be useful both at boot and with
+    compressed file systems that store executables. BCJ filters are
+    small and improve the compression ratio a little, and have minimal
+    effect on performance.
+
+    Creating a limited XZ encoder may be considered if people think it is
+    useful. LZMA2 is slower to compress than e.g. Deflate or LZO even at
+    the fastest settings, so it isn't clear if LZMA2 encoder is wanted
+    into the kernel.
+
+Conformance to the .xz file format specification
+
+    There are a couple of corner cases where things have been simplified
+    at expense of detecting errors as early as possible. These should not
+    matter in practice all, since they don't cause security issues. But
+    it is good to know this if testing the code e.g. with the test files
+    from XZ Utils.
+
+Reporting bugs
+
+    Report bugs to <lasse.collin@tukaani.org> or (preferably) visit
+    #tukaani on Freenode and talk to Larhzu. I don't actively read
+    LKML or other kernel-related mailing lists, so if there's something
+    I should know, you must email to me personally or use IRC.
+
+    Don't bother Igor Pavlov with questions about the XZ implementation
+    in the kernel or about XZ Utils. While these two implementations
+    include essential code that is directly based on Igor Pavlov's code,
+    these implementations aren't maintained nor supported by him.
+

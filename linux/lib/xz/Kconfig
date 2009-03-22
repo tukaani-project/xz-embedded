@@ -1,0 +1,7 @@
+config XZ_DEC
+	tristate "XZ decompression support"
+	select CRC32
+	help
+	  Currently this supports the LZMA2 compression algorithm and
+	  CRC32 for integrity checking. Other algorithms may be added
+	  later. See Documentation/xz.txt for more information.
