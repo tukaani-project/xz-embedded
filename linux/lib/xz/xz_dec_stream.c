@@ -88,11 +88,6 @@ struct xz_dec {
 
 		/* Size of the Block Header field */
 		uint32_t size;
-
-#ifdef XZ_DEC_BCJ
-		/* Type of the BCJ filter */
-		enum xz_bcj_type bcj_type;
-#endif
 	} block_header;
 
 	/* Information collected when decoding Blocks */
@@ -145,6 +140,7 @@ struct xz_dec {
 
 #ifdef XZ_DEC_BCJ
 	struct xz_dec_bcj *bcj;
+	bool bcj_active;
 #endif
 };
 
@@ -152,8 +148,8 @@ struct xz_dec {
 static enum xz_ret XZ_FUNC xz_dec_raw(struct xz_dec *s, struct xz_buf *b)
 {
 #ifdef XZ_DEC_BCJ
-	if (s->block_header.bcj_type != XZ_BCJ_NONE)
-		return xz_dec_bcj_run(s, b);
+	if (s->bcj_active)
+		return xz_dec_bcj_run(s->bcj, s->lzma2, b);
 #endif
 
 	return xz_dec_lzma2_run(s->lzma2, b);
@@ -347,36 +343,14 @@ static enum xz_ret XZ_FUNC dec_block_header(struct xz_dec *s)
 
 #ifdef XZ_DEC_BCJ
 	/* If there are two filters, the first one must be a BCJ filter. */
-	if (s->temp.buf[1] & 0x01) {
+	s->bcj_active = s->temp.buf[1] & 0x01;
+	if (s->bcj_active) {
 		if (s->temp.size - s->temp.pos < 2)
 			return XZ_OPTIONS_ERROR;
 
-		switch (s->temp.buf[s->temp.pos]) {
-#ifdef XZ_DEC_BCJ_X86
-		case XZ_BCJ_X86:
-#endif
-#ifdef XZ_DEC_BCJ_POWERPC
-		case XZ_BCJ_POWERPC:
-#endif
-#ifdef XZ_DEC_BCJ_IA64
-		case XZ_BCJ_IA64:
-#endif
-#ifdef XZ_DEC_BCJ_ARM
-		case XZ_BCJ_ARM:
-#endif
-#ifdef XZ_DEC_BCJ_ARMTHUMB
-		case XZ_BCJ_ARMTHUMB:
-#endif
-#ifdef XZ_DEC_BCJ_SPARC
-		case XZ_BCJ_SPARC:
-#endif
-			break;
-
-		default:
-			return XZ_OPTIONS_ERROR;
-		}
-
-		s->block_header.bcj_type = s->temp.buf[s->temp.pos++];
+		ret = xz_dec_bcj_reset(s->bcj, s->temp.buf[s->temp.pos++]);
+		if (ret != XZ_OK)
+			return ret;
 
 		/*
 		 * We don't support custom start offset,
@@ -384,10 +358,6 @@ static enum xz_ret XZ_FUNC dec_block_header(struct xz_dec *s)
 		 */
 		if (s->temp.buf[s->temp.pos++] != 0x00)
 			return XZ_OPTIONS_ERROR;
-
-		xz_dec_bcj_reset(s);
-	} else {
-		s->bcj.type = XZ_BCJ_NONE;
 	}
 #endif
 
@@ -719,15 +689,27 @@ struct xz_dec * XZ_FUNC xz_dec_init(uint32_t dict_max)
 	if (s == NULL)
 		return NULL;
 
+#ifdef XZ_DEC_BCJ
+	s->bcj = xz_dec_bcj_create();
+	if (s->bcj == NULL)
+		goto error_bcj;
+#endif
+
 	s->lzma2 = xz_dec_lzma2_create(dict_max);
-	if (s->lzma2 == NULL) {
-		kfree(s);
-		return NULL;
-	}
+	if (s->lzma2 == NULL)
+		goto error_lzma2;
 
 	s->single_call = dict_max == 0;
 	xz_dec_reset(s);
 	return s;
+
+error_lzma2:
+#ifdef XZ_DEC_BCJ
+	kfree(s->bcj);
+error_bcj:
+#endif
+	kfree(s);
+	return NULL;
 }
 
 void XZ_FUNC xz_dec_reset(struct xz_dec *s)
@@ -753,6 +735,9 @@ void XZ_FUNC xz_dec_end(struct xz_dec *s)
 {
 	if (s != NULL) {
 		xz_dec_lzma2_end(s->lzma2);
+#ifdef XZ_DEC_BCJ
+		xz_dec_bcj_end(s->bcj);
+#endif
 		kfree(s);
 	}
 }

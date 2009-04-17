@@ -44,10 +44,43 @@
  * is in b.in_pos and the amount of output used is in b.out_pos.
  */
 
+/*
+ * Allow using the macro INIT to mark all functions with __init.
+ * INIT is already used for this purporse in the Deflate decoder,
+ * so this should ease things a little.
+ */
 #if !defined(XZ_FUNC) && defined(INIT)
 #	define XZ_FUNC INIT
 #endif
+
+/*
+ * Use the internal CRC32 code instead of kernel's CRC32 module, which
+ * is not available in early phase of booting.
+ */
 #define XZ_INTERNAL_CRC32
+
+/*
+ * Ignore the configuration specified in the kernel config for the xz_dec
+ * module. For boot time use, we enable only the BCJ filter of the current
+ * architecture, or none if no BCJ filter is available for the architecture.
+ */
+#define XZ_IGNORE_KCONFIG
+#ifdef CONFIG_X86
+#	define XZ_DEC_X86
+#endif
+#ifdef CONFIG_PPC
+#	define XZ_DEC_PPC
+#endif
+#ifdef CONFIG_ARM
+#	define XZ_DEC_ARM
+#endif
+#ifdef CONFIG_IA64
+#	define XZ_DEC_IA64
+#endif
+#ifdef CONFIG_SPARC
+#	define XZ_DEC_SPARC
+#endif
+
 #include "xz_private.h"
 
 #ifdef XZ_MEM_FUNCS
@@ -125,6 +158,9 @@ static void * XZ_FUNC memmove(void *dest, const void *src, size_t size)
 #include "xz_crc32.c"
 #include "xz_dec_stream.c"
 #include "xz_dec_lzma2.c"
+#ifdef XZ_DEC_BCJ
+#	include "xz_dec_bcj.c"
+#endif
 
 /**
  * xz_dec_buf() - Single-call XZ decoder

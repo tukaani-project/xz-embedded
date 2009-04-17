@@ -3,8 +3,9 @@ XZ data compression in Linux
 ============================
 
     The xz_dec module provides XZ decoder which supports the LZMA2
-    filter and CRC32 for integrity checking. The usage of the xz_dec
-    module is documented in include/linux/xz.h.
+    filter, and optionally also Branch/Call/Jump (BCJ) filters for
+    executable data. CRC32 is supported for integrity checking. The
+    usage of the xz_dec module is documented in include/linux/xz.h.
 
 Userspace tools
 
@@ -50,12 +51,6 @@ Notes on compression options
     should be at least as big as the uncompressed data itself.
 
 Future plans
-
-    Add support for BCJ (Branch/Call/Jump) filters for different
-    instruction sets. This could be useful both at boot and with
-    compressed file systems that store executables. BCJ filters are
-    small and improve the compression ratio a little, and have minimal
-    effect on performance.
 
     Creating a limited XZ encoder may be considered if people think it is
     useful. LZMA2 is slower to compress than e.g. Deflate or LZO even at

@@ -16,6 +16,26 @@
 #		include <linux/vmalloc.h>
 #		include <linux/string.h>
 #	endif
+#	ifndef XZ_IGNORE_KCONFIG
+#		ifdef CONFIG_XZ_DEC_X86
+#			define XZ_DEC_X86
+#		endif
+#		ifdef CONFIG_XZ_DEC_POWERPC
+#			define XZ_DEC_POWERPC
+#		endif
+#		ifdef CONFIG_XZ_DEC_IA64
+#			define XZ_DEC_IA64
+#		endif
+#		ifdef CONFIG_XZ_DEC_ARM
+#			define XZ_DEC_ARM
+#		endif
+#		ifdef CONFIG_XZ_DEC_ARMTHUMB
+#			define XZ_DEC_ARMTHUMB
+#		endif
+#		ifdef CONFIG_XZ_DEC_SPARC
+#			define XZ_DEC_SPARC
+#		endif
+#	endif
 #	include <linux/xz.h>
 #else
 #	ifndef XZ_MEM_FUNCS
@@ -38,6 +58,13 @@
 #			define __always_inline inline
 #		endif
 #	endif
+#	ifndef noinline_for_stack
+#		ifdef __GNUC__
+#			define noinline_for_stack __attribute__((__noinline__))
+#		else
+#			define noinline_for_stack
+#		endif
+#	endif
 #endif
 
 #ifdef XZ_MEM_FUNCS
@@ -48,6 +75,15 @@
 #else
 #	define memeq(a, b, size) (memcmp(a, b, size) == 0)
 #	define memzero(buf, size) memset(buf, 0, size)
+#endif
+
+#ifndef XZ_DEC_BCJ
+#	if defined(XZ_DEC_X86) || defined(XZ_DEC_POWERPC) \
+			|| defined(XZ_DEC_IA64) || defined(XZ_DEC_ARM) \
+			|| defined(XZ_DEC_ARM) || defined(XZ_DEC_ARMTHUMB) \
+			|| defined(XZ_DEC_SPARC)
+#		define XZ_DEC_BCJ
+#	endif
 #endif
 
 /*
@@ -72,15 +108,29 @@ extern enum xz_ret XZ_FUNC xz_dec_lzma2_run(
 /* Free the memory allocated for the LZMA2 decoder. */
 extern void XZ_FUNC xz_dec_lzma2_end(struct xz_dec_lzma2 *s);
 
-/* BCJ filter types (Branch/Jump/Call) */
-enum xz_bcj_type {
-	XZ_BCJ_NONE = 0,
-	XZ_BCJ_X86 = 4,
-	XZ_BCJ_POWERPC = 5, /* Big endian */
-	XZ_BCJ_IA64 = 6,
-	XZ_BCJ_ARM = 7, /* Little endian */
-	XZ_BCJ_ARMTHUMB = 8, /* Little endian */
-	XZ_BCJ_SPARC = 9
-};
+/*
+ * Allocate memory for BCJ decoders. xz_dec_bcj_reset() must be used before
+ * calling xz_dec_bcj_run().
+ */
+extern struct xz_dec_bcj * XZ_FUNC xz_dec_bcj_create(void);
+
+/*
+ * Decode the Filter ID of a BCJ filter. This implementation doesn't
+ * support custom start offsets, so no decoding of Filter Properties
+ * is needed. Returns XZ_OK if the given Filter ID is supported.
+ * Otherwise XZ_OPTIONS_ERROR is returned.
+ */
+extern enum xz_ret XZ_FUNC xz_dec_bcj_reset(struct xz_dec_bcj *s, uint8_t id);
+
+/*
+ * Decode raw BCJ + LZMA2 stream. This must be used only if there actually is
+ * a BCJ filter in the chain. If the chain has only LZMA2, xz_dec_lzma2_run()
+ * must be called directly.
+ */
+extern enum xz_ret XZ_FUNC xz_dec_bcj_run(struct xz_dec_bcj *s,
+		struct xz_dec_lzma2 *lzma2, struct xz_buf *b);
+
+/* Free the memory allocated for the BCJ filters. */
+#define xz_dec_bcj_end(s) kfree(s)
 
 #endif

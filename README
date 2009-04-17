@@ -17,12 +17,29 @@ XZ Embedded
 
 Compiling the Linux kernel module
 
-    cd linux/lib/xz
-    make -C /path/to/kernel/source \
-            CONFIG_XZ_DEC=m KCPPFLAGS=-I"$(pwd)/../../include" M="$(pwd)"
-
     The xz_dec module depends on crc32 module, so make sure that you have
     it enabled (CONFIG_CRC32).
+
+    Building the xz_dec module without support for BCJ filters:
+
+        cd linux/lib/xz
+        make -C /path/to/kernel/source \
+                KCPPFLAGS=-I"$(pwd)/../../include" M="$(pwd)" \
+                CONFIG_XZ_DEC=m
+
+    Building the xz_dec module with support for BCJ filters:
+
+        cd linux/lib/xz
+        make -C /path/to/kernel/source \
+                KCPPFLAGS=-I"$(pwd)/../../include" M="$(pwd)" \
+                CONFIG_XZ_DEC=m CONFIG_XZ_DEC_BCJ=y \
+                CONFIG_XZ_DEC_X86=y CONFIG_XZ_DEC_POWERPC=y \
+                CONFIG_XZ_DEC_IA64=y CONFIG_XZ_DEC_ARM=y \
+                CONFIG_XZ_DEC_ARMTHUMB=y CONFIG_XZ_DEC_SPARC=y
+
+    If you want only one or a few of the BCJ filters, omit the appropriate
+    variables. CONFIG_XZ_DEC_BCJ=y is always required to build the support
+    code shared between all BCJ filters.
 
 Compiler requirements
 
@@ -57,6 +74,34 @@ Embedding into userspace applications
     Your code should use only the functions declared in xz.h. The rest of
     the .h files are meant only for internal use in XZ Embedded.
 
+BCJ filter support
+
+    If you want support for one or more BCJ filters, you need to copy also
+    linux/lib/xz/xz_dec_bcj.c into your application, and use appropriate
+    #defines when compiling XZ Embedded. You don't need these #defines in
+    the code that just uses XZ Embedded via xz.h, but having them always
+    #defined doesn't hurt either.
+
+        #define             Instruction set     BCJ filter endianness
+        XZ_DEC_X86          x86 or x86-64       Little endian only
+        XZ_DEC_POWERPC      PowerPC             Big endian only
+        XZ_DEC_IA64         Itanium (IA-64)     Big or little endian
+        XZ_DEC_ARM          ARM                 Little endian only
+        XZ_DEC_ARMTHUMB     ARM-Thumb           Little endian only
+        XZ_DEC_SPARC        SPARC               Big or little endian
+
+    While some architectures are (partially) bi-endian, the endianness
+    setting doesn't change the endianness of the instructions on all
+    architectures. That's why Itanium and SPARC filters work for both big
+    and little endian executables (Itanium has little endian instructions
+    and SPARC has big endian instructions).
+
+    There currently is no filter for little endian PowerPC or big endian
+    ARM or ARM-Thumb. Implementing filters for them can be considered if
+    there is a need for such filters in real-world applications.
+
+Notes about shared libraries
+
     If you are including XZ Embedded into a shared library, you very
     probably should rename the xz_* functions to prevent symbol
     conflicts in case your library is linked against some other library
@@ -64,11 +109,11 @@ Embedding into userspace applications
     a different version of XZ Embedded). TODO: Provide an easy way
     to do this.
 
-    NOTE: Please don't create a shared library of XZ Embedded itself
-    unless it is fine to rebuild everything depending on that shared
-    library everytime you upgrade to a newer version of XZ Embedded.
-    There are no API or ABI stability guarantees between different
-    versions of XZ Embedded.
+    Please don't create a shared library of XZ Embedded itself unless
+    it is fine to rebuild everything depending on that shared library
+    everytime you upgrade to a newer version of XZ Embedded. There are
+    no API or ABI stability guarantees between different versions of
+    XZ Embedded.
 
 Specifying the calling convention
 
