@@ -828,7 +828,7 @@ static bool XZ_FUNC lzma2_lzma(struct xz_dec_lzma2 *s, struct xz_buf *b)
 	uint32_t tmp;
 
 	in_avail = b->in_size - b->in_pos;
-	if (s->temp.size > 0) {
+	if (s->temp.size > 0 || s->lzma2.compressed == 0) {
 		tmp = 2 * LZMA_IN_REQUIRED - s->temp.size;
 		if (tmp > s->lzma2.compressed - s->temp.size)
 			tmp = s->lzma2.compressed - s->temp.size;
