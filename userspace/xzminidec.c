@@ -80,6 +80,7 @@ int main(int argc, char **argv)
 
 		switch (ret) {
 		case XZ_STREAM_END:
+			xz_dec_end(s);
 			return 0;
 
 		case XZ_MEMLIMIT_ERROR:
@@ -106,6 +107,7 @@ int main(int argc, char **argv)
 	}
 
 error:
+	xz_dec_end(s);
 	fputs(argv[0], stderr);
 	fputs(": ", stderr);
 	fputs(msg, stderr);
