@@ -445,7 +445,7 @@ static enum xz_ret XZ_FUNC dec_main(struct xz_dec *s, struct xz_buf *b)
 		s->sequence = SEQ_BLOCK_HEADER;
 
 	case SEQ_BLOCK_HEADER:
-		if (!fill_temp(s,b ))
+		if (!fill_temp(s, b))
 			return XZ_OK;
 
 		ret = dec_block_header(s);
