@@ -47,7 +47,7 @@ config XZ_DEC_BCJ
 	default n
 
 config XZ_DEC_TEST
-	bool "XZ decompressor tester"
+	tristate "XZ decompressor tester"
 	default n
 	depends on XZ_DEC
 	help
