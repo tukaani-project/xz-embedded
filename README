@@ -20,19 +20,21 @@ Compiling the Linux kernel module
     The xz_dec module depends on crc32 module, so make sure that you have
     it enabled (CONFIG_CRC32).
 
-    Building the xz_dec module without support for BCJ filters:
+    Building the xz_dec and xz_dec_test modules without support for BCJ
+    filters:
 
         cd linux/lib/xz
         make -C /path/to/kernel/source \
                 KCPPFLAGS=-I"$(pwd)/../../include" M="$(pwd)" \
-                CONFIG_XZ_DEC=m
+                CONFIG_XZ_DEC=m CONFIG_XZ_DEC_TEST=m
 
-    Building the xz_dec module with support for BCJ filters:
+    Building the xz_dec and xz_dec_test modules with support for BCJ
+    filters:
 
         cd linux/lib/xz
         make -C /path/to/kernel/source \
                 KCPPFLAGS=-I"$(pwd)/../../include" M="$(pwd)" \
-                CONFIG_XZ_DEC=m CONFIG_XZ_DEC_BCJ=y \
+                CONFIG_XZ_DEC=m CONFIG_XZ_DEC_TEST=m CONFIG_XZ_DEC_BCJ=y \
                 CONFIG_XZ_DEC_X86=y CONFIG_XZ_DEC_POWERPC=y \
                 CONFIG_XZ_DEC_IA64=y CONFIG_XZ_DEC_ARM=y \
                 CONFIG_XZ_DEC_ARMTHUMB=y CONFIG_XZ_DEC_SPARC=y
@@ -40,6 +42,9 @@ Compiling the Linux kernel module
     If you want only one or a few of the BCJ filters, omit the appropriate
     variables. CONFIG_XZ_DEC_BCJ=y is always required to build the support
     code shared between all BCJ filters.
+
+    Most people don't need the xz_dec_test module. You can skip building
+    it by omitting CONFIG_XZ_DEC_TEST=m from the make command line.
 
 Compiler requirements
 
