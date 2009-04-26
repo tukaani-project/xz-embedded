@@ -69,7 +69,7 @@
 #	define XZ_DEC_X86
 #endif
 #ifdef CONFIG_PPC
-#	define XZ_DEC_PPC
+#	define XZ_DEC_POWERPC
 #endif
 #ifdef CONFIG_ARM
 #	define XZ_DEC_ARM
