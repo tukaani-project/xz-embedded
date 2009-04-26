@@ -15,7 +15,12 @@
 #		include <linux/slab.h>
 #		include <linux/vmalloc.h>
 #		include <linux/string.h>
+#		define memeq(a, b, size) (memcmp(a, b, size) == 0)
+#		define memzero(buf, size) memset(buf, 0, size)
 #	endif
+#	include <asm/byteorder.h>
+#	include <asm/unaligned.h>
+#	define get_le32(p) le32_to_cpup((const uint32_t *)(p))
 #	ifndef XZ_IGNORE_KCONFIG
 #		ifdef CONFIG_XZ_DEC_X86
 #			define XZ_DEC_X86
@@ -38,45 +43,18 @@
 #	endif
 #	include <linux/xz.h>
 #else
-#	ifndef XZ_MEM_FUNCS
-#		include <stdlib.h>
-#		include <string.h>
-#		define kmalloc(size, flags) malloc(size)
-#		define kfree(ptr) free(ptr)
-#		define vmalloc(size) malloc(size)
-#		define vfree(ptr) free(ptr)
-#	endif
-#	include <stdbool.h>
-#	include "xz.h"
-#	define min(x, y) ((x) < (y) ? (x) : (y))
-#	define min_t(type, x, y) min(x, y)
-#	ifndef __always_inline
-#		ifdef __GNUC__
-#			define __always_inline \
-				inline __attribute__((__always_inline__))
-#		else
-#			define __always_inline inline
-#		endif
-#	endif
-#	ifndef noinline_for_stack
-#		ifdef __GNUC__
-#			define noinline_for_stack __attribute__((__noinline__))
-#		else
-#			define noinline_for_stack
-#		endif
-#	endif
+	/*
+	 * For userspace builds, use a separate header to define the required
+	 * macros and functions. This makes it easier to adapt the code into
+	 * different environments and avoids clutter in the Linux kernel tree.
+	 */
+#	include "xz_config.h"
 #endif
 
-#ifdef XZ_MEM_FUNCS
-#	define kmalloc(size, flags) malloc(size)
-#	define kfree(ptr) ((void)0)
-#	define vmalloc(size) malloc(size)
-#	define vfree(ptr) ((void)0)
-#else
-#	define memeq(a, b, size) (memcmp(a, b, size) == 0)
-#	define memzero(buf, size) memset(buf, 0, size)
-#endif
-
+/*
+ * If any of the BCJ filter decoders are wanted, define XZ_DEC_BCJ.
+ * XZ_DEC_BCJ is used to enable generic support for BCJ decoders.
+ */
 #ifndef XZ_DEC_BCJ
 #	if defined(XZ_DEC_X86) || defined(XZ_DEC_POWERPC) \
 			|| defined(XZ_DEC_IA64) || defined(XZ_DEC_ARM) \

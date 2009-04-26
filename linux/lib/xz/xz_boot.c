@@ -84,6 +84,16 @@
 #include "xz_private.h"
 
 #ifdef XZ_MEM_FUNCS
+/* Replace the normal allocation functions with our simple version. */
+#undef kmalloc
+#undef kfree
+#undef vmalloc
+#undef vfree
+#define kmalloc(size, flags) malloc(size)
+#define kfree(ptr) ((void)0)
+#define vmalloc(size) malloc(size)
+#define vfree(ptr) ((void)0)
+
 /*
  * Very simple malloc, which just picks big enough chunk from a preallocated
  * buffer. There's no free(), because the decoder is (at least for now) used

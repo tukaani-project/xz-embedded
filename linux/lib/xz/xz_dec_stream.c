@@ -10,19 +10,6 @@
 #include "xz_private.h"
 #include "xz_stream.h"
 
-#ifdef __KERNEL__
-#	include <asm/byteorder.h>
-#	define read_le32(buf) le32_to_cpup((const uint32_t *)(buf))
-#else
-static uint32_t XZ_FUNC read_le32(const uint8_t *buf)
-{
-	return (uint32_t)buf[0]
-			| ((uint32_t)buf[1] << 8)
-			| ((uint32_t)buf[2] << 16)
-			| ((uint32_t)buf[3] << 24);
-}
-#endif
-
 /* Hash used to validate the Index field */
 struct xz_dec_hash {
 	vli_type unpadded;
@@ -249,7 +236,7 @@ static enum xz_ret XZ_FUNC dec_stream_header(struct xz_dec *s)
 		return XZ_FORMAT_ERROR;
 
 	if (xz_crc32(s->temp.buf + HEADER_MAGIC_SIZE, 2, 0)
-			!= read_le32(s->temp.buf + HEADER_MAGIC_SIZE + 2))
+			!= get_le32(s->temp.buf + HEADER_MAGIC_SIZE + 2))
 		return XZ_DATA_ERROR;
 
 	/*
@@ -271,7 +258,7 @@ static enum xz_ret XZ_FUNC dec_stream_footer(struct xz_dec *s)
 	if (!memeq(s->temp.buf + 10, FOOTER_MAGIC, FOOTER_MAGIC_SIZE))
 		return XZ_DATA_ERROR;
 
-	if (xz_crc32(s->temp.buf + 4, 6, 0) != read_le32(s->temp.buf))
+	if (xz_crc32(s->temp.buf + 4, 6, 0) != get_le32(s->temp.buf))
 		return XZ_DATA_ERROR;
 
 	/*
@@ -279,7 +266,7 @@ static enum xz_ret XZ_FUNC dec_stream_footer(struct xz_dec *s)
 	 * Index CRC32 field to s->index.size, thus we use s->index.size / 4
 	 * instead of s->index.size / 4 - 1.
 	 */
-	if (s->index.size / 4 != read_le32(s->temp.buf + 4))
+	if (s->index.size / 4 != get_le32(s->temp.buf + 4))
 		return XZ_DATA_ERROR;
 
 	if (s->temp.buf[8] != 0 || s->temp.buf[9] != s->has_crc32)
@@ -303,7 +290,7 @@ static enum xz_ret XZ_FUNC dec_block_header(struct xz_dec *s)
 	 */
 	s->temp.size -= 4;
 	if (xz_crc32(s->temp.buf, s->temp.size, 0)
-			!= read_le32(s->temp.buf + s->temp.size))
+			!= get_le32(s->temp.buf + s->temp.size))
 		return XZ_DATA_ERROR;
 
 	s->temp.pos = 2;

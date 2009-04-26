@@ -18,15 +18,15 @@ COMMON_OBJS = $(COMMON_SRCS:.c=.o)
 XZMINIDEC_OBJS = xzminidec.o
 BUFTEST_OBJS = buftest.o
 BOOTTEST_OBJS = boottest.o
-XZ_HEADERS = xz.h xz_private.h xz_stream.h xz_lzma2.h
+XZ_HEADERS = xz.h xz_private.h xz_stream.h xz_lzma2.h xz_config.h
 PROGRAMS = xzminidec buftest boottest
 
-ALL_CPPFLAGS = $(BCJ_CPPFLAGS) $(CPPFLAGS)
+ALL_CPPFLAGS = -I../linux/include/linux -I. $(BCJ_CPPFLAGS) $(CPPFLAGS)
 
 all: $(PROGRAMS)
 
 %.o: %.c $(XZ_HEADERS)
-	$(CC) -I../linux/include/linux $(ALL_CPPFLAGS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(ALL_CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
 xzminidec: $(COMMON_OBJS) $(XZMINIDEC_OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(COMMON_OBJS) $(XZMINIDEC_OBJS)

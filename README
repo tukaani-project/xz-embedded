@@ -66,6 +66,7 @@ Embedding into userspace applications
         linux/lib/xz/xz_lzma2.h
         linux/lib/xz/xz_private.h
         linux/lib/xz/xz_stream.h
+        userspace/xz_config.h
 
     Alternatively, xz.h may be placed into a different directory but then
     that directory must be in the compiler include path when compiling
@@ -74,13 +75,17 @@ Embedding into userspace applications
     Your code should use only the functions declared in xz.h. The rest of
     the .h files are meant only for internal use in XZ Embedded.
 
+    You may want to modify xz_config.h to be more suitable for your build
+    environment. Probably you should at least skim through it even if the
+    default file works as is.
+
 BCJ filter support
 
     If you want support for one or more BCJ filters, you need to copy also
     linux/lib/xz/xz_dec_bcj.c into your application, and use appropriate
-    #defines when compiling XZ Embedded. You don't need these #defines in
-    the code that just uses XZ Embedded via xz.h, but having them always
-    #defined doesn't hurt either.
+    #defines in xz_config.h or in compiler flags. You don't need these
+    #defines in the code that just uses XZ Embedded via xz.h, but having
+    them always #defined doesn't hurt either.
 
         #define             Instruction set     BCJ filter endianness
         XZ_DEC_X86          x86 or x86-64       Little endian only

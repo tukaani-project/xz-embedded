@@ -116,10 +116,7 @@ static noinline_for_stack size_t XZ_FUNC bcj_x86(
 		prev_pos = i;
 
 		if (bcj_x86_test_msbyte(buf[i + 4])) {
-			src =(uint32_t)buf[i + 1]
-					| ((uint32_t)buf[i + 2] << 8)
-					| ((uint32_t)buf[i + 3] << 16)
-					| ((uint32_t)buf[i + 4] << 24);
+			src = get_unaligned_le32(buf + i + 1);
 			while (true) {
 				dest = src - (s->pos + (uint32_t)i + 5);
 				if (prev_mask == 0)
@@ -135,10 +132,7 @@ static noinline_for_stack size_t XZ_FUNC bcj_x86(
 
 			dest &= 0x01FFFFFF;
 			dest |= (uint32_t)0 - (dest & 0x01000000);
-			buf[i + 1] = (uint8_t)dest;
-			buf[i + 2] = (uint8_t)(dest >> 8);
-			buf[i + 3] = (uint8_t)(dest >> 16);
-			buf[i + 4] = (uint8_t)(dest >> 24);
+			put_unaligned_le32(dest, buf + i + 1);
 			i += 4;
 		} else {
 			prev_mask = (prev_mask << 1) | 1;
@@ -159,19 +153,13 @@ static noinline_for_stack size_t XZ_FUNC bcj_powerpc(
 	uint32_t instr;
 
 	for (i = 0; i + 4 <= size; i += 4) {
-		instr = ((uint32_t)buf[i] << 24)
-				| ((uint32_t)buf[i + 1] << 16)
-				| ((uint32_t)buf[i + 2] << 8)
-				| (uint32_t)buf[i + 3];
+		instr = get_unaligned_be32(buf + i);
 		if ((instr & 0xFC000003) == 0x48000001) {
 			instr &= 0x03FFFFFC;
 			instr -= s->pos + (uint32_t)i;
 			instr &= 0x03FFFFFC;
 			instr |= 0x48000001;
-			buf[i] = (uint8_t)(instr >> 24);
-			buf[i + 1] = (uint8_t)(instr >> 16);
-			buf[i + 2] = (uint8_t)(instr >> 8);
-			buf[i + 3] = (uint8_t)instr;
+			put_unaligned_be32(instr, buf + i);
 		}
 	}
 
@@ -325,20 +313,14 @@ static noinline_for_stack size_t XZ_FUNC bcj_sparc(
 	uint32_t instr;
 
 	for (i = 0; i + 4 <= size; i += 4) {
-		instr = ((uint32_t)buf[i] << 24)
-				| ((uint32_t)buf[i + 1] << 16)
-				| ((uint32_t)buf[i + 2] << 8)
-				| (uint32_t)buf[i + 3];
+		instr = get_unaligned_be32(buf + i);
 		if ((instr >> 22) == 0x100 || (instr >> 22) == 0x1FF) {
 			instr <<= 2;
 			instr -= s->pos + (uint32_t)i;
 			instr >>= 2;
 			instr = ((uint32_t)0x40000000 - (instr & 0x400000))
 					| 0x40000000 | (instr & 0x3FFFFF);
-			buf[i] = (uint8_t)(instr >> 24);
-			buf[i + 1] = (uint8_t)(instr >> 16);
-			buf[i + 2] = (uint8_t)(instr >> 8);
-			buf[i + 3] = (uint8_t)instr;
+			put_unaligned_be32(instr, buf + i);
 		}
 	}
 
