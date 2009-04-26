@@ -27,7 +27,7 @@ static int device_major;
  * We reuse the same decoder state, and thus can decode only one
  * file at a time.
  */
-static bool device_is_open = false;
+static bool device_is_open;
 
 /* XZ decoder state */
 static struct xz_dec *state;

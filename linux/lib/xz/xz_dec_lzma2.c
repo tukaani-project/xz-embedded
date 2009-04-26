@@ -509,11 +509,10 @@ static __always_inline uint32_t XZ_FUNC rc_bittree(
 	uint32_t symbol = 1;
 
 	do {
-		if (rc_bit(rc, &probs[symbol])) {
+		if (rc_bit(rc, &probs[symbol]))
 			symbol = (symbol << 1) + 1;
-		} else {
+		else
 			symbol <<= 1;
-		}
 	} while (symbol < limit);
 
 	return symbol;
