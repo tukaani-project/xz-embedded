@@ -701,21 +701,20 @@ error_bcj:
 
 void XZ_FUNC xz_dec_reset(struct xz_dec *s)
 {
-	if (s != NULL) {
-		s->sequence = SEQ_STREAM_HEADER;
-		s->allow_buf_error = false;
-		s->pos = 0;
-		s->crc32 = 0;
+	s->sequence = SEQ_STREAM_HEADER;
+	s->allow_buf_error = false;
+	s->pos = 0;
+	s->crc32 = 0;
 
-		s->block.count = 0;
-		memzero(&s->block.hash, sizeof(s->block.hash));
+	s->block.count = 0;
+	memzero(&s->block.hash, sizeof(s->block.hash));
 
-		s->index.size = 0;
-		memzero(&s->index.hash, sizeof(s->index.hash));
+	s->index.sequence = SEQ_INDEX_COUNT;
+	s->index.size = 0;
+	memzero(&s->index.hash, sizeof(s->index.hash));
 
-		s->temp.pos = 0;
-		s->temp.size = STREAM_HEADER_SIZE;
-	}
+	s->temp.pos = 0;
+	s->temp.size = STREAM_HEADER_SIZE;
 }
 
 void XZ_FUNC xz_dec_end(struct xz_dec *s)
