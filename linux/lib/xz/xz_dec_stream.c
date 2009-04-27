@@ -203,7 +203,7 @@ static enum xz_ret XZ_FUNC dec_vli(struct xz_dec *s,
  * the sizes possibly stored in the Block Header. Update the hash and
  * Block count, which are later used to validate the Index field.
  */
-static enum xz_ret dec_block(struct xz_dec *s, struct xz_buf *b)
+static enum xz_ret XZ_FUNC dec_block(struct xz_dec *s, struct xz_buf *b)
 {
 	enum xz_ret ret;
 
@@ -276,7 +276,7 @@ static void XZ_FUNC index_update(struct xz_dec *s, const struct xz_buf *b)
  * This can return XZ_OK (more input needed), XZ_STREAM_END (everything
  * successfully decoded), or XZ_DATA_ERROR (input is corrupt).
  */
-static enum xz_ret dec_index(struct xz_dec *s, struct xz_buf *b)
+static enum xz_ret XZ_FUNC dec_index(struct xz_dec *s, struct xz_buf *b)
 {
 	enum xz_ret ret;
 
