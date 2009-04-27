@@ -910,155 +910,169 @@ enum xz_ret XZ_FUNC xz_dec_lzma2_run(struct xz_dec_lzma2 *s, struct xz_buf *b)
 {
 	uint32_t tmp;
 
-	while (b->in_pos < b->in_size || s->lzma2.sequence == SEQ_LZMA_RUN)
-	switch (s->lzma2.sequence) {
-	case SEQ_CONTROL:
-		/*
-		 * LZMA2 control byte
-		 *
-		 * Exact values:
-		 *   0x00   End marker
-		 *   0x01   Dictionary reset followed by an uncompressed chunk
-		 *   0x02   Uncompressed chunk (no dictionary reset)
-		 *
-		 * Highest three bits (s->control & 0xE0):
-		 *   0xE0   Dictionary reset, new properties and state reset,
-		 *          followed by LZMA compressed chunk
-		 *   0xC0   New properties and state reset, followed by
-		 *          LZMA compressed chunk (no dictionary reset)
-		 *   0xA0   State reset using old properties, followed by
-		 *          LZMA compressed chunk (no dictionary reset)
-		 *   0x80   LZMA chunk (no dictionary or state reset)
-		 *
-		 * For LZMA compressed chunks, the lowest five bits
-		 * (s->control & 1F) are the highest bits of the
-		 * uncompressed size (bits 16-20).
-		 *
-		 * A new LZMA2 stream must begin with a dictionary reset.
-		 * The first LZMA chunk must set new properties and reset
-		 * the LZMA state.
-		 *
-		 * Values that don't match anything described above are
-		 * invalid and we return XZ_DATA_ERROR.
-		 */
-		tmp = b->in[b->in_pos++];
+	while (b->in_pos < b->in_size || s->lzma2.sequence == SEQ_LZMA_RUN) {
+		switch (s->lzma2.sequence) {
+		case SEQ_CONTROL:
+			/*
+			 * LZMA2 control byte
+			 *
+			 * Exact values:
+			 *   0x00   End marker
+			 *   0x01   Dictionary reset followed by
+			 *          an uncompressed chunk
+			 *   0x02   Uncompressed chunk (no dictionary reset)
+			 *
+			 * Highest three bits (s->control & 0xE0):
+			 *   0xE0   Dictionary reset, new properties and state
+			 *          reset, followed by LZMA compressed chunk
+			 *   0xC0   New properties and state reset, followed
+			 *          by LZMA compressed chunk (no dictionary
+			 *          reset)
+			 *   0xA0   State reset using old properties,
+			 *          followed by LZMA compressed chunk (no
+			 *          dictionary reset)
+			 *   0x80   LZMA chunk (no dictionary or state reset)
+			 *
+			 * For LZMA compressed chunks, the lowest five bits
+			 * (s->control & 1F) are the highest bits of the
+			 * uncompressed size (bits 16-20).
+			 *
+			 * A new LZMA2 stream must begin with a dictionary
+			 * reset. The first LZMA chunk must set new
+			 * properties and reset the LZMA state.
+			 *
+			 * Values that don't match anything described above
+			 * are invalid and we return XZ_DATA_ERROR.
+			 */
+			tmp = b->in[b->in_pos++];
 
-		if (tmp >= 0xE0 || tmp == 0x01) {
-			s->lzma2.need_props = true;
-			s->lzma2.need_dict_reset = false;
-			dict_reset(&s->dict, b);
-		} else if (s->lzma2.need_dict_reset) {
-			return XZ_DATA_ERROR;
-		}
-
-		if (tmp >= 0x80) {
-			s->lzma2.uncompressed = (tmp & 0x1F) << 16;
-			s->lzma2.sequence = SEQ_UNCOMPRESSED_1;
-
-			if (tmp >= 0xC0) {
-				/*
-				 * When there are new properties, state reset
-				 * is done at SEQ_PROPERTIES.
-				 */
-				s->lzma2.need_props = false;
-				s->lzma2.next_sequence = SEQ_PROPERTIES;
-
-			} else if (s->lzma2.need_props) {
+			if (tmp >= 0xE0 || tmp == 0x01) {
+				s->lzma2.need_props = true;
+				s->lzma2.need_dict_reset = false;
+				dict_reset(&s->dict, b);
+			} else if (s->lzma2.need_dict_reset) {
 				return XZ_DATA_ERROR;
-
-			} else {
-				s->lzma2.next_sequence = SEQ_LZMA_PREPARE;
-				if (tmp >= 0xA0)
-					lzma_reset(s);
 			}
-		} else {
-			if (tmp == 0x00)
-				return XZ_STREAM_END;
 
-			if (tmp > 0x02)
-				return XZ_DATA_ERROR;
+			if (tmp >= 0x80) {
+				s->lzma2.uncompressed = (tmp & 0x1F) << 16;
+				s->lzma2.sequence = SEQ_UNCOMPRESSED_1;
 
+				if (tmp >= 0xC0) {
+					/*
+					 * When there are new properties,
+					 * state reset is done at
+					 * SEQ_PROPERTIES.
+					 */
+					s->lzma2.need_props = false;
+					s->lzma2.next_sequence
+							= SEQ_PROPERTIES;
+
+				} else if (s->lzma2.need_props) {
+					return XZ_DATA_ERROR;
+
+				} else {
+					s->lzma2.next_sequence
+							= SEQ_LZMA_PREPARE;
+					if (tmp >= 0xA0)
+						lzma_reset(s);
+				}
+			} else {
+				if (tmp == 0x00)
+					return XZ_STREAM_END;
+
+				if (tmp > 0x02)
+					return XZ_DATA_ERROR;
+
+				s->lzma2.sequence = SEQ_COMPRESSED_0;
+				s->lzma2.next_sequence = SEQ_COPY;
+			}
+
+			break;
+
+		case SEQ_UNCOMPRESSED_1:
+			s->lzma2.uncompressed
+					+= (uint32_t)b->in[b->in_pos++] << 8;
+			s->lzma2.sequence = SEQ_UNCOMPRESSED_2;
+			break;
+
+		case SEQ_UNCOMPRESSED_2:
+			s->lzma2.uncompressed
+					+= (uint32_t)b->in[b->in_pos++] + 1;
 			s->lzma2.sequence = SEQ_COMPRESSED_0;
-			s->lzma2.next_sequence = SEQ_COPY;
-		}
+			break;
 
-		break;
+		case SEQ_COMPRESSED_0:
+			s->lzma2.compressed
+					= (uint32_t)b->in[b->in_pos++] << 8;
+			s->lzma2.sequence = SEQ_COMPRESSED_1;
+			break;
 
-	case SEQ_UNCOMPRESSED_1:
-		s->lzma2.uncompressed += (uint32_t)b->in[b->in_pos++] << 8;
-		s->lzma2.sequence = SEQ_UNCOMPRESSED_2;
-		break;
+		case SEQ_COMPRESSED_1:
+			s->lzma2.compressed
+					+= (uint32_t)b->in[b->in_pos++] + 1;
+			s->lzma2.sequence = s->lzma2.next_sequence;
+			break;
 
-	case SEQ_UNCOMPRESSED_2:
-		s->lzma2.uncompressed += (uint32_t)b->in[b->in_pos++] + 1;
-		s->lzma2.sequence = SEQ_COMPRESSED_0;
-		break;
-
-	case SEQ_COMPRESSED_0:
-		s->lzma2.compressed = (uint32_t)b->in[b->in_pos++] << 8;
-		s->lzma2.sequence = SEQ_COMPRESSED_1;
-		break;
-
-	case SEQ_COMPRESSED_1:
-		s->lzma2.compressed += (uint32_t)b->in[b->in_pos++] + 1;
-		s->lzma2.sequence = s->lzma2.next_sequence;
-		break;
-
-	case SEQ_PROPERTIES:
-		if (!lzma_props(s, b->in[b->in_pos++]))
-			return XZ_DATA_ERROR;
-
-		s->lzma2.sequence = SEQ_LZMA_PREPARE;
-
-	case SEQ_LZMA_PREPARE:
-		if (s->lzma2.compressed < RC_INIT_BYTES)
-			return XZ_DATA_ERROR;
-
-		if (!rc_read_init(&s->rc, b))
-			return XZ_OK;
-
-		s->lzma2.compressed -= RC_INIT_BYTES;
-		s->lzma2.sequence = SEQ_LZMA_RUN;
-
-	case SEQ_LZMA_RUN:
-		/*
-		 * Set dictionary limit to indicate how much we want to be
-		 * encoded at maximum. Decode new data into the dictionary.
-		 * Flush the new data from dictionary to b->out. Check if we
-		 * finished decoding this chunk. In case the dictionary got
-		 * full but we didn't fill the output buffer yet, we may run
-		 * this loop multiple times without changing s->lzma2.sequence.
-		 */
-		dict_limit(&s->dict, min_t(size_t, b->out_size - b->out_pos,
-				s->lzma2.uncompressed));
-		if (!lzma2_lzma(s, b))
-			return XZ_DATA_ERROR;
-
-		s->lzma2.uncompressed -= dict_flush(&s->dict, b);
-
-		if (s->lzma2.uncompressed == 0) {
-			if (s->lzma2.compressed > 0 || s->lzma.len > 0
-					|| !rc_is_finished(&s->rc))
+		case SEQ_PROPERTIES:
+			if (!lzma_props(s, b->in[b->in_pos++]))
 				return XZ_DATA_ERROR;
 
-			rc_reset(&s->rc);
+			s->lzma2.sequence = SEQ_LZMA_PREPARE;
+
+		case SEQ_LZMA_PREPARE:
+			if (s->lzma2.compressed < RC_INIT_BYTES)
+				return XZ_DATA_ERROR;
+
+			if (!rc_read_init(&s->rc, b))
+				return XZ_OK;
+
+			s->lzma2.compressed -= RC_INIT_BYTES;
+			s->lzma2.sequence = SEQ_LZMA_RUN;
+
+		case SEQ_LZMA_RUN:
+			/*
+			 * Set dictionary limit to indicate how much we want
+			 * to be encoded at maximum. Decode new data into the
+			 * dictionary. Flush the new data from dictionary to
+			 * b->out. Check if we finished decoding this chunk.
+			 * In case the dictionary got full but we didn't fill
+			 * the output buffer yet, we may run this loop
+			 * multiple times without changing s->lzma2.sequence.
+			 */
+			dict_limit(&s->dict, min_t(size_t,
+					b->out_size - b->out_pos,
+					s->lzma2.uncompressed));
+			if (!lzma2_lzma(s, b))
+				return XZ_DATA_ERROR;
+
+			s->lzma2.uncompressed -= dict_flush(&s->dict, b);
+
+			if (s->lzma2.uncompressed == 0) {
+				if (s->lzma2.compressed > 0 || s->lzma.len > 0
+						|| !rc_is_finished(&s->rc))
+					return XZ_DATA_ERROR;
+
+				rc_reset(&s->rc);
+				s->lzma2.sequence = SEQ_CONTROL;
+
+			} else if (b->out_pos == b->out_size
+					|| (b->in_pos == b->in_size
+						&& s->temp.size
+						< s->lzma2.compressed)) {
+				return XZ_OK;
+			}
+
+			break;
+
+		case SEQ_COPY:
+			dict_uncompressed(&s->dict, b, &s->lzma2.compressed);
+			if (s->lzma2.compressed > 0)
+				return XZ_OK;
+
 			s->lzma2.sequence = SEQ_CONTROL;
-
-		} else if (b->out_pos == b->out_size
-				|| (b->in_pos == b->in_size
-				&& s->temp.size < s->lzma2.compressed)) {
-			return XZ_OK;
+			break;
 		}
-
-		break;
-
-	case SEQ_COPY:
-		dict_uncompressed(&s->dict, b, &s->lzma2.compressed);
-		if (s->lzma2.compressed > 0)
-			return XZ_OK;
-
-		s->lzma2.sequence = SEQ_CONTROL;
-		break;
 	}
 
 	return XZ_OK;
