@@ -1127,7 +1127,6 @@ enum xz_ret XZ_FUNC xz_dec_lzma2_reset(struct xz_dec_lzma2 *s, uint8_t props)
 	return XZ_OK;
 }
 
-
 void XZ_FUNC xz_dec_lzma2_end(struct xz_dec_lzma2 *s)
 {
 	if (s->dict.allocated > 0)
