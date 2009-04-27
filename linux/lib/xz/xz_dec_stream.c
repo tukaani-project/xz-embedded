@@ -692,7 +692,7 @@ struct xz_dec * XZ_FUNC xz_dec_init(uint32_t dict_max)
 
 error_lzma2:
 #ifdef XZ_DEC_BCJ
-	kfree(s->bcj);
+	xz_dec_bcj_end(s->bcj);
 error_bcj:
 #endif
 	kfree(s);
