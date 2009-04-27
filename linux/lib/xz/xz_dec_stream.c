@@ -189,10 +189,9 @@ static enum xz_ret XZ_FUNC dec_vli(struct xz_dec *s,
 			return XZ_STREAM_END;
 		}
 
-		if (s->pos >= 56)
-			return XZ_DATA_ERROR;
-
 		s->pos += 7;
+		if (s->pos == 7 * VLI_BYTES_MAX)
+			return XZ_DATA_ERROR;
 	}
 
 	return XZ_OK;
