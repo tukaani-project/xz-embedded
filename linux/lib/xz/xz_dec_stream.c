@@ -26,9 +26,7 @@ struct xz_dec {
 		SEQ_BLOCK_UNCOMPRESS,
 		SEQ_BLOCK_PADDING,
 		SEQ_BLOCK_CHECK,
-		SEQ_INDEX_COUNT,
-		SEQ_INDEX_UNPADDED,
-		SEQ_INDEX_UNCOMPRESSED,
+		SEQ_INDEX,
 		SEQ_INDEX_PADDING,
 		SEQ_INDEX_CRC32,
 		SEQ_STREAM_FOOTER
@@ -97,6 +95,13 @@ struct xz_dec {
 
 	/* Variables needed when verifying the Index field */
 	struct {
+		/* Position in dec_index() */
+		enum {
+			SEQ_INDEX_COUNT,
+			SEQ_INDEX_UNPADDED,
+			SEQ_INDEX_UNCOMPRESSED
+		} sequence;
+
 		/* Size of the Index in bytes */
 		vli_type size;
 
@@ -130,17 +135,6 @@ struct xz_dec {
 	bool bcj_active;
 #endif
 };
-
-/* Call the raw filter decoder chain. */
-static enum xz_ret XZ_FUNC xz_dec_raw(struct xz_dec *s, struct xz_buf *b)
-{
-#ifdef XZ_DEC_BCJ
-	if (s->bcj_active)
-		return xz_dec_bcj_run(s->bcj, s->lzma2, b);
-#endif
-
-	return xz_dec_lzma2_run(s->lzma2, b);
-}
 
 /*
  * Fill s->temp by copying data starting from b->in[b->in_pos]. Caller
@@ -197,12 +191,135 @@ static enum xz_ret XZ_FUNC dec_vli(struct xz_dec *s,
 	return XZ_OK;
 }
 
+/*
+ * Decode the Compressed Data field from a Block. Update and validate
+ * the observed compressed and uncompressed sizes of the Block so that
+ * they don't exceed the values possibly stored in the Block Header
+ * (validation assumes that no integer overflow occurs, since vli_type
+ * is normally uint64_t). Update the CRC32 if presence of the CRC32
+ * field was indicated in Stream Header.
+ *
+ * Once the decoding is finished, validate that the observed sizes match
+ * the sizes possibly stored in the Block Header. Update the hash and
+ * Block count, which are later used to validate the Index field.
+ */
+static enum xz_ret dec_block(struct xz_dec *s, struct xz_buf *b)
+{
+	enum xz_ret ret;
+
+	s->in_start = b->in_pos;
+	s->out_start = b->out_pos;
+
+#ifdef XZ_DEC_BCJ
+	if (s->bcj_active)
+		ret = xz_dec_bcj_run(s->bcj, s->lzma2, b);
+	else
+#endif
+		ret = xz_dec_lzma2_run(s->lzma2, b);
+
+	s->block.compressed += b->in_pos - s->in_start;
+	s->block.uncompressed += b->out_pos - s->out_start;
+
+	/*
+	 * There is no need to separately check for VLI_UNKNOWN, since
+	 * the observed sizes are always smaller than VLI_UNKNOWN.
+	 */
+	if (s->block.compressed > s->block_header.compressed
+			|| s->block.uncompressed
+				> s->block_header.uncompressed)
+		return XZ_DATA_ERROR;
+
+	if (s->has_crc32)
+		s->crc32 = xz_crc32(b->out + s->out_start,
+				b->out_pos - s->out_start, s->crc32);
+
+	if (ret == XZ_STREAM_END) {
+		if (s->block_header.compressed != VLI_UNKNOWN
+				&& s->block_header.compressed
+					!= s->block.compressed)
+			return XZ_DATA_ERROR;
+
+		if (s->block_header.uncompressed != VLI_UNKNOWN
+				&& s->block_header.uncompressed
+					!= s->block.uncompressed)
+			return XZ_DATA_ERROR;
+
+		s->block.hash.unpadded += s->block_header.size
+				+ s->block.compressed;
+		if (s->has_crc32)
+			s->block.hash.unpadded += 4;
+
+		s->block.hash.uncompressed += s->block.uncompressed;
+		s->block.hash.crc32 = xz_crc32(
+				(const uint8_t *)&s->block.hash,
+				sizeof(s->block.hash), s->block.hash.crc32);
+
+		++s->block.count;
+	}
+
+	return ret;
+}
+
 /* Update the Index size and the CRC32 value. */
 static void XZ_FUNC index_update(struct xz_dec *s, const struct xz_buf *b)
 {
 	size_t in_used = b->in_pos - s->in_start;
 	s->index.size += in_used;
 	s->crc32 = xz_crc32(b->in + s->in_start, in_used, s->crc32);
+}
+
+/*
+ * Decode the Number of Records, Unpadded Size, and Uncompressed Size
+ * fields from the Index field. That is, Index Padding and CRC32 are not
+ * decoded by this function.
+ *
+ * This can return XZ_OK (more input needed), XZ_STREAM_END (everything
+ * successfully decoded), or XZ_DATA_ERROR (input is corrupt).
+ */
+static enum xz_ret dec_index(struct xz_dec *s, struct xz_buf *b)
+{
+	enum xz_ret ret;
+
+	do {
+		ret = dec_vli(s, b->in, &b->in_pos, b->in_size);
+		if (ret != XZ_STREAM_END) {
+			index_update(s, b);
+			return ret;
+		}
+
+		switch (s->index.sequence) {
+		case SEQ_INDEX_COUNT:
+			s->index.count = s->vli;
+
+			/*
+			 * Validate that the Number of Records field
+			 * indicates the same number of Records as
+			 * there were Blocks in the Stream.
+			 */
+			if (s->index.count != s->block.count)
+				return XZ_DATA_ERROR;
+
+			s->index.sequence = SEQ_INDEX_UNPADDED;
+			break;
+
+		case SEQ_INDEX_UNPADDED:
+			s->index.hash.unpadded += s->vli;
+			s->index.sequence = SEQ_INDEX_UNCOMPRESSED;
+			break;
+
+		case SEQ_INDEX_UNCOMPRESSED:
+			s->index.hash.uncompressed += s->vli;
+			s->index.hash.crc32 = xz_crc32(
+					(const uint8_t *)&s->index.hash,
+					sizeof(s->index.hash),
+					s->index.hash.crc32);
+			--s->index.count;
+			s->index.sequence = SEQ_INDEX_UNPADDED;
+			break;
+		}
+	} while (s->index.count > 0);
+
+	return XZ_STREAM_END;
 }
 
 /*
@@ -389,220 +506,139 @@ static enum xz_ret XZ_FUNC dec_main(struct xz_dec *s, struct xz_buf *b)
 	 */
 	s->in_start = b->in_pos;
 
-	while (true)
-	switch (s->sequence) {
-	case SEQ_STREAM_HEADER:
-		/*
-		 * Stream Header is copied to s->temp, and then decoded
-		 * from there. This way if the caller gives us only little
-		 * input at a time, we can still keep the Stream Header
-		 * decoding code still simple. Similar approach is used
-		 * in many places in this file.
-		 */
-		if (!fill_temp(s, b))
-			return XZ_OK;
+	while (true) {
+		switch (s->sequence) {
+		case SEQ_STREAM_HEADER:
+			/*
+			 * Stream Header is copied to s->temp, and then
+			 * decoded from there. This way if the caller
+			 * gives us only little input at a time, we can
+			 * still keep the Stream Header decoding code
+			 * simple. Similar approach is used in many places
+			 * in this file.
+			 */
+			if (!fill_temp(s, b))
+				return XZ_OK;
 
-		ret = dec_stream_header(s);
-		if (ret != XZ_OK)
-			return ret;
+			ret = dec_stream_header(s);
+			if (ret != XZ_OK)
+				return ret;
 
-		s->sequence = SEQ_BLOCK_START;
+			s->sequence = SEQ_BLOCK_START;
 
-	case SEQ_BLOCK_START:
-		/* We need one byte of input to continue. */
-		if (b->in_pos == b->in_size)
-			return XZ_OK;
-
-		/* See if this is the beginning of the Index field. */
-		if (b->in[b->in_pos] == 0) {
-			s->in_start = b->in_pos++;
-			s->sequence = SEQ_INDEX_COUNT;
-			break;
-		}
-
-		/*
-		 * Calculate the size of the Block Header and prepare
-		 * to decode it.
-		 */
-		s->block_header.size = ((uint32_t)b->in[b->in_pos] + 1) * 4;
-
-		s->temp.size = s->block_header.size;
-		s->temp.pos = 0;
-		s->sequence = SEQ_BLOCK_HEADER;
-
-	case SEQ_BLOCK_HEADER:
-		if (!fill_temp(s, b))
-			return XZ_OK;
-
-		ret = dec_block_header(s);
-		if (ret != XZ_OK)
-			return ret;
-
-		s->sequence = SEQ_BLOCK_UNCOMPRESS;
-
-	case SEQ_BLOCK_UNCOMPRESS:
-		s->in_start = b->in_pos;
-		s->out_start = b->out_pos;
-
-		ret = xz_dec_raw(s, b);
-
-		s->block.compressed += b->in_pos - s->in_start;
-		s->block.uncompressed += b->out_pos - s->out_start;
-
-		if (s->block.compressed > s->block_header.compressed
-				|| s->block.uncompressed
-					> s->block_header.uncompressed)
-			return XZ_DATA_ERROR;
-
-		if (s->has_crc32)
-			s->crc32 = xz_crc32(b->out + s->out_start,
-					b->out_pos - s->out_start, s->crc32);
-
-		if (ret != XZ_STREAM_END)
-			return ret;
-
-		/*
-		 * If sizes were stored in Block Header, they must match
-		 * the observed sizes now.
-		 */
-		if (s->block_header.compressed != VLI_UNKNOWN
-				&& s->block_header.compressed
-					!= s->block.compressed)
-			return XZ_DATA_ERROR;
-
-		if (s->block_header.uncompressed != VLI_UNKNOWN
-				&& s->block_header.uncompressed
-					!= s->block.uncompressed)
-			return XZ_DATA_ERROR;
-
-		/*
-		 * Update the hash and count, which are used for
-		 * Index validation.
-		 */
-		s->block.hash.unpadded += s->block_header.size
-				+ s->block.compressed;
-		if (s->has_crc32)
-			s->block.hash.unpadded += 4;
-
-		s->block.hash.uncompressed += s->block.uncompressed;
-		s->block.hash.crc32 = xz_crc32(
-				(const uint8_t *)&s->block.hash,
-				sizeof(s->block.hash), s->block.hash.crc32);
-
-		++s->block.count;
-		s->sequence = SEQ_BLOCK_PADDING;
-
-	case SEQ_BLOCK_PADDING:
-		/*
-		 * Size of Compressed Data + Block Padding must be a
-		 * multiple of four. We don't need s->d->block.compressed
-		 * for anything else anymore, so we use it here to test the
-		 * size of the Block Padding field.
-		 */
-		while (s->block.compressed & 3) {
+		case SEQ_BLOCK_START:
+			/* We need one byte of input to continue. */
 			if (b->in_pos == b->in_size)
 				return XZ_OK;
 
-			if (b->in[b->in_pos++] != 0)
+			/* See if this is the beginning of the Index field. */
+			if (b->in[b->in_pos] == 0) {
+				s->in_start = b->in_pos++;
+				s->sequence = SEQ_INDEX;
+				break;
+			}
+
+			/*
+			 * Calculate the size of the Block Header and
+			 * prepare to decode it.
+			 */
+			s->block_header.size
+				= ((uint32_t)b->in[b->in_pos] + 1) * 4;
+
+			s->temp.size = s->block_header.size;
+			s->temp.pos = 0;
+			s->sequence = SEQ_BLOCK_HEADER;
+
+		case SEQ_BLOCK_HEADER:
+			if (!fill_temp(s, b))
+				return XZ_OK;
+
+			ret = dec_block_header(s);
+			if (ret != XZ_OK)
+				return ret;
+
+			s->sequence = SEQ_BLOCK_UNCOMPRESS;
+
+		case SEQ_BLOCK_UNCOMPRESS:
+			ret = dec_block(s, b);
+			if (ret != XZ_STREAM_END)
+				return ret;
+
+			s->sequence = SEQ_BLOCK_PADDING;
+
+		case SEQ_BLOCK_PADDING:
+			/*
+			 * Size of Compressed Data + Block Padding
+			 * must be a multiple of four. We don't need
+			 * s->block.compressed for anything else
+			 * anymore, so we use it here to test the size
+			 * of the Block Padding field.
+			 */
+			while (s->block.compressed & 3) {
+				if (b->in_pos == b->in_size)
+					return XZ_OK;
+
+				if (b->in[b->in_pos++] != 0)
+					return XZ_DATA_ERROR;
+
+				++s->block.compressed;
+			}
+
+			s->sequence = SEQ_BLOCK_CHECK;
+
+		case SEQ_BLOCK_CHECK:
+			if (s->has_crc32) {
+				ret = crc32_validate(s, b);
+				if (ret != XZ_STREAM_END)
+					return ret;
+			}
+
+			s->sequence = SEQ_BLOCK_START;
+			break;
+
+		case SEQ_INDEX:
+			ret = dec_index(s, b);
+			if (ret != XZ_STREAM_END)
+				return ret;
+
+			s->sequence = SEQ_INDEX_PADDING;
+
+		case SEQ_INDEX_PADDING:
+			while ((s->index.size + (b->in_pos - s->in_start))
+					& 3) {
+				if (b->in_pos == b->in_size) {
+					index_update(s, b);
+					return XZ_OK;
+				}
+
+				if (b->in[b->in_pos++] != 0)
+					return XZ_DATA_ERROR;
+			}
+
+			/* Finish the CRC32 value and Index size. */
+			index_update(s, b);
+
+			/* Compare the hashes to validate the Index field. */
+			if (!memeq(&s->block.hash, &s->index.hash,
+					sizeof(s->block.hash)))
 				return XZ_DATA_ERROR;
 
-			++s->block.compressed;
-		}
+			s->sequence = SEQ_INDEX_CRC32;
 
-		s->sequence = SEQ_BLOCK_CHECK;
-
-	case SEQ_BLOCK_CHECK:
-		if (s->has_crc32) {
+		case SEQ_INDEX_CRC32:
 			ret = crc32_validate(s, b);
 			if (ret != XZ_STREAM_END)
 				return ret;
-		}
 
-		s->sequence = SEQ_BLOCK_START;
-		break;
+			s->temp.size = STREAM_HEADER_SIZE;
+			s->sequence = SEQ_STREAM_FOOTER;
 
-	case SEQ_INDEX_COUNT:
-	case SEQ_INDEX_UNPADDED:
-	case SEQ_INDEX_UNCOMPRESSED:
-		do {
-			ret = dec_vli(s, b->in, &b->in_pos, b->in_size);
-			if (ret != XZ_STREAM_END) {
-				index_update(s, b);
-				return ret;
-			}
-
-			switch (s->sequence) {
-			case SEQ_INDEX_COUNT:
-				s->index.count = s->vli;
-
-				/*
-				 * Validate that the Number of Records field
-				 * indicates the same number of Records as
-				 * there were Blocks in the Stream.
-				 */
-				if (s->index.count != s->block.count)
-					return XZ_DATA_ERROR;
-
-				s->sequence = SEQ_INDEX_UNPADDED;
-				break;
-
-			case SEQ_INDEX_UNPADDED:
-				s->index.hash.unpadded += s->vli;
-				s->sequence = SEQ_INDEX_UNCOMPRESSED;
-				break;
-
-			case SEQ_INDEX_UNCOMPRESSED:
-				s->index.hash.uncompressed += s->vli;
-				s->index.hash.crc32 = xz_crc32(
-					(const uint8_t *)&s->index.hash,
-					sizeof(s->index.hash),
-					s->index.hash.crc32);
-				--s->index.count;
-				s->sequence = SEQ_INDEX_UNPADDED;
-				break;
-
-			default:
-				/* Silence compiler warnings */
-				break;
-			}
-		} while (s->index.count > 0);
-
-		s->sequence = SEQ_INDEX_PADDING;
-
-	case SEQ_INDEX_PADDING:
-		while ((s->index.size + (b->in_pos - s->in_start)) & 3) {
-			if (b->in_pos == b->in_size) {
-				index_update(s, b);
+		case SEQ_STREAM_FOOTER:
+			if (!fill_temp(s, b))
 				return XZ_OK;
-			}
 
-			if (b->in[b->in_pos++] != 0)
-				return XZ_DATA_ERROR;
+			return dec_stream_footer(s);
 		}
-
-		/* Finish the CRC32 value and Index size. */
-		index_update(s, b);
-
-		/* Compare the hashes to validate the Index field. */
-		if (!memeq(&s->block.hash, &s->index.hash,
-				sizeof(s->block.hash)))
-			return XZ_DATA_ERROR;
-
-		s->sequence = SEQ_INDEX_CRC32;
-
-	case SEQ_INDEX_CRC32:
-		ret = crc32_validate(s, b);
-		if (ret != XZ_STREAM_END)
-			return ret;
-
-		s->temp.size = STREAM_HEADER_SIZE;
-		s->sequence = SEQ_STREAM_FOOTER;
-
-	case SEQ_STREAM_FOOTER:
-		if (!fill_temp(s, b))
-			return XZ_OK;
-
-		return dec_stream_footer(s);
 	}
 
 	/* Never reached */
