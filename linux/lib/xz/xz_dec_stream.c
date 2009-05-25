@@ -740,14 +740,8 @@ void XZ_FUNC xz_dec_reset(struct xz_dec *s)
 	s->allow_buf_error = false;
 	s->pos = 0;
 	s->crc32 = 0;
-
-	s->block.count = 0;
-	memzero(&s->block.hash, sizeof(s->block.hash));
-
-	s->index.sequence = SEQ_INDEX_COUNT;
-	s->index.size = 0;
-	memzero(&s->index.hash, sizeof(s->index.hash));
-
+	memzero(&s->block, sizeof(s->block));
+	memzero(&s->index, sizeof(s->index));
 	s->temp.pos = 0;
 	s->temp.size = STREAM_HEADER_SIZE;
 }
