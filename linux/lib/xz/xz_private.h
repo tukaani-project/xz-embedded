@@ -68,7 +68,8 @@
  * Allocate memory for LZMA2 decoder. xz_dec_lzma2_reset() must be used
  * before calling xz_dec_lzma2_run().
  */
-extern struct xz_dec_lzma2 * XZ_FUNC xz_dec_lzma2_create(uint32_t dict_max);
+XZ_EXTERN struct xz_dec_lzma2 * XZ_FUNC xz_dec_lzma2_create(
+		uint32_t dict_max);
 
 /*
  * Decode the LZMA2 properties (one byte) and reset the decoder. Return
@@ -76,21 +77,21 @@ extern struct xz_dec_lzma2 * XZ_FUNC xz_dec_lzma2_create(uint32_t dict_max);
  * big enough, and XZ_OPTIONS_ERROR if props indicates something that this
  * decoder doesn't support.
  */
-extern enum xz_ret XZ_FUNC xz_dec_lzma2_reset(
+XZ_EXTERN enum xz_ret XZ_FUNC xz_dec_lzma2_reset(
 		struct xz_dec_lzma2 *s, uint8_t props);
 
 /* Decode raw LZMA2 stream from b->in to b->out. */
-extern enum xz_ret XZ_FUNC xz_dec_lzma2_run(
+XZ_EXTERN enum xz_ret XZ_FUNC xz_dec_lzma2_run(
 		struct xz_dec_lzma2 *s, struct xz_buf *b);
 
 /* Free the memory allocated for the LZMA2 decoder. */
-extern void XZ_FUNC xz_dec_lzma2_end(struct xz_dec_lzma2 *s);
+XZ_EXTERN void XZ_FUNC xz_dec_lzma2_end(struct xz_dec_lzma2 *s);
 
 /*
  * Allocate memory for BCJ decoders. xz_dec_bcj_reset() must be used before
  * calling xz_dec_bcj_run().
  */
-extern struct xz_dec_bcj * XZ_FUNC xz_dec_bcj_create(void);
+XZ_EXTERN struct xz_dec_bcj * XZ_FUNC xz_dec_bcj_create(void);
 
 /*
  * Decode the Filter ID of a BCJ filter. This implementation doesn't
@@ -98,14 +99,15 @@ extern struct xz_dec_bcj * XZ_FUNC xz_dec_bcj_create(void);
  * is needed. Returns XZ_OK if the given Filter ID is supported.
  * Otherwise XZ_OPTIONS_ERROR is returned.
  */
-extern enum xz_ret XZ_FUNC xz_dec_bcj_reset(struct xz_dec_bcj *s, uint8_t id);
+XZ_EXTERN enum xz_ret XZ_FUNC xz_dec_bcj_reset(
+		struct xz_dec_bcj *s, uint8_t id);
 
 /*
  * Decode raw BCJ + LZMA2 stream. This must be used only if there actually is
  * a BCJ filter in the chain. If the chain has only LZMA2, xz_dec_lzma2_run()
  * must be called directly.
  */
-extern enum xz_ret XZ_FUNC xz_dec_bcj_run(struct xz_dec_bcj *s,
+XZ_EXTERN enum xz_ret XZ_FUNC xz_dec_bcj_run(struct xz_dec_bcj *s,
 		struct xz_dec_lzma2 *lzma2, struct xz_buf *b);
 
 /* Free the memory allocated for the BCJ filters. */

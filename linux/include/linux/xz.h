@@ -19,6 +19,11 @@
 #	include <stdint.h>
 #endif
 
+/* In Linux, this is used to make extern functions static when needed. */
+#ifndef XZ_EXTERN
+#	define XZ_EXTERN extern
+#endif
+
 /* In Linux, this is used to mark the functions with __init when needed. */
 #ifndef XZ_FUNC
 #	define XZ_FUNC
@@ -130,7 +135,7 @@ struct xz_dec;
  * On success, xz_dec_init() returns a pointer to struct xz_dec, which is
  * ready to be used with xz_dec_run(). On error, xz_dec_init() returns NULL.
  */
-extern struct xz_dec * XZ_FUNC xz_dec_init(uint32_t dict_max);
+XZ_EXTERN struct xz_dec * XZ_FUNC xz_dec_init(uint32_t dict_max);
 
 /**
  * xz_dec_run() - Run the XZ decoder
@@ -153,7 +158,7 @@ extern struct xz_dec * XZ_FUNC xz_dec_init(uint32_t dict_max);
  * amount valid data from the beginning of the stream. You must use the
  * multi-call decoder if you don't want to uncompress the whole stream.
  */
-extern enum xz_ret XZ_FUNC xz_dec_run(struct xz_dec *s, struct xz_buf *b);
+XZ_EXTERN enum xz_ret XZ_FUNC xz_dec_run(struct xz_dec *s, struct xz_buf *b);
 
 /**
  * xz_dec_reset() - Reset an already allocated decoder state
@@ -166,14 +171,14 @@ extern enum xz_ret XZ_FUNC xz_dec_run(struct xz_dec *s, struct xz_buf *b);
  * xz_dec_run(). Thus, explicit call to xz_dec_reset() is useful only in
  * multi-call mode.
  */
-extern void XZ_FUNC xz_dec_reset(struct xz_dec *s);
+XZ_EXTERN void XZ_FUNC xz_dec_reset(struct xz_dec *s);
 
 /**
  * xz_dec_end() - Free the memory allocated for the decoder state
  * @s:          Decoder state allocated using xz_dec_init(). If s is NULL,
  *              this function does nothing.
  */
-extern void XZ_FUNC xz_dec_end(struct xz_dec *s);
+XZ_EXTERN void XZ_FUNC xz_dec_end(struct xz_dec *s);
 
 /*
  * Standalone build (userspace build or in-kernel build for boot time use)
@@ -186,14 +191,14 @@ extern void XZ_FUNC xz_dec_end(struct xz_dec *s);
  * This must be called before any other xz_* function to initialize
  * the CRC32 lookup table.
  */
-extern void XZ_FUNC xz_crc32_init(void);
+XZ_EXTERN void XZ_FUNC xz_crc32_init(void);
 
 /*
  * Update CRC32 value using the polynomial from IEEE-802.3. To start a new
  * calculation, the third argument must be zero. To continue the calculation,
  * the previously returned value is passed as the third argument.
  */
-extern uint32_t XZ_FUNC xz_crc32(
+XZ_EXTERN uint32_t XZ_FUNC xz_crc32(
 		const uint8_t *buf, size_t size, uint32_t crc);
 #endif
 #endif

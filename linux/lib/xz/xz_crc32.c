@@ -19,7 +19,7 @@
 
 static uint32_t xz_crc32_table[256];
 
-void XZ_FUNC xz_crc32_init(void)
+XZ_EXTERN void XZ_FUNC xz_crc32_init(void)
 {
 	const uint32_t poly = 0xEDB88320;
 
@@ -38,7 +38,8 @@ void XZ_FUNC xz_crc32_init(void)
 	return;
 }
 
-uint32_t XZ_FUNC xz_crc32(const uint8_t *buf, size_t size, uint32_t crc)
+XZ_EXTERN uint32_t XZ_FUNC xz_crc32(
+		const uint8_t *buf, size_t size, uint32_t crc)
 {
 	crc = ~crc;
 

@@ -408,7 +408,7 @@ static void XZ_FUNC bcj_flush(struct xz_dec_bcj *s, struct xz_buf *b)
  * data in chunks of 1-16 bytes. To hide this issue, this function does
  * some buffering.
  */
-enum xz_ret XZ_FUNC xz_dec_bcj_run(struct xz_dec_bcj *s,
+XZ_EXTERN enum xz_ret XZ_FUNC xz_dec_bcj_run(struct xz_dec_bcj *s,
 		struct xz_dec_lzma2 *lzma2, struct xz_buf *b)
 {
 	size_t out_start;
@@ -503,13 +503,14 @@ enum xz_ret XZ_FUNC xz_dec_bcj_run(struct xz_dec_bcj *s,
 	return s->ret;
 }
 
-struct xz_dec_bcj * XZ_FUNC xz_dec_bcj_create(void)
+XZ_EXTERN struct xz_dec_bcj * XZ_FUNC xz_dec_bcj_create(void)
 {
 	struct xz_dec_bcj *s = kmalloc(sizeof(*s), GFP_KERNEL);
 	return s;
 }
 
-enum xz_ret XZ_FUNC xz_dec_bcj_reset(struct xz_dec_bcj *s, uint8_t id)
+XZ_EXTERN enum xz_ret XZ_FUNC xz_dec_bcj_reset(
+		struct xz_dec_bcj *s, uint8_t id)
 {
 	switch (id) {
 #ifdef XZ_DEC_X86
