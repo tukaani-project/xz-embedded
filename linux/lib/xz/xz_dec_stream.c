@@ -382,7 +382,7 @@ static enum xz_ret XZ_FUNC dec_stream_footer(struct xz_dec *s)
 	 * Index CRC32 field to s->index.size, thus we use s->index.size / 4
 	 * instead of s->index.size / 4 - 1.
 	 */
-	if (s->index.size / 4 != get_le32(s->temp.buf + 4))
+	if ((s->index.size >> 2) != get_le32(s->temp.buf + 4))
 		return XZ_DATA_ERROR;
 
 	if (s->temp.buf[8] != 0 || s->temp.buf[9] != s->has_crc32)

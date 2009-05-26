@@ -788,12 +788,21 @@ static bool XZ_FUNC lzma_props(struct xz_dec_lzma2 *s, uint8_t props)
 	if (props > (4 * 5 + 4) * 9 + 8)
 		return false;
 
-	s->lzma.pos_mask = props / (9 * 5);
-	props -= s->lzma.pos_mask * 9 * 5;
+	s->lzma.pos_mask = 0;
+	while (props >= 9 * 5) {
+		props -= 9 * 5;
+		++s->lzma.pos_mask;
+	}
+
 	s->lzma.pos_mask = (1 << s->lzma.pos_mask) - 1;
 
-	s->lzma.literal_pos_mask = props / 9;
-	s->lzma.lc = props - s->lzma.literal_pos_mask * 9;
+	s->lzma.literal_pos_mask = 0;
+	while (props >= 9) {
+		props -= 9;
+		++s->lzma.literal_pos_mask;
+	}
+
+	s->lzma.lc = props;
 
 	if (s->lzma.lc + s->lzma.literal_pos_mask > 4)
 		return false;
@@ -1112,7 +1121,7 @@ XZ_EXTERN enum xz_ret XZ_FUNC xz_dec_lzma2_reset(
 		return XZ_OPTIONS_ERROR;
 
 	s->dict.size = 2 + (props & 1);
-	s->dict.size <<= props / 2 + 11;
+	s->dict.size <<= (props >> 1) + 11;
 
 	if (s->dict.allocated > 0 && s->dict.allocated < s->dict.size)
 		return XZ_MEMLIMIT_ERROR;
