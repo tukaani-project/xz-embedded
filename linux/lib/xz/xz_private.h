@@ -11,7 +11,8 @@
 #define XZ_PRIVATE_H
 
 #ifdef __KERNEL__
-#	ifndef XZ_MEM_FUNCS
+	/* XZ_STATIC may be defined only via decompress_unxz.c. */
+#	ifndef XZ_STATIC
 #		include <linux/slab.h>
 #		include <linux/vmalloc.h>
 #		include <linux/string.h>
@@ -21,6 +22,7 @@
 #	include <asm/byteorder.h>
 #	include <asm/unaligned.h>
 #	define get_le32(p) le32_to_cpup((const uint32_t *)(p))
+	/* XZ_IGNORE_KCONFIG may be defined only via decompress_unxz.c. */
 #	ifndef XZ_IGNORE_KCONFIG
 #		ifdef CONFIG_XZ_DEC_X86
 #			define XZ_DEC_X86

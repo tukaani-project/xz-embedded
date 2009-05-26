@@ -18,19 +18,19 @@
 /* #define XZ_DEC_ARMTHUMB */
 /* #define XZ_DEC_SPARC */
 
-#ifndef XZ_MEM_FUNCS
-#	include <stdlib.h>
-#	include <string.h>
-#	define kmalloc(size, flags) malloc(size)
-#	define kfree(ptr) free(ptr)
-#	define vmalloc(size) malloc(size)
-#	define vfree(ptr) free(ptr)
-#	define memeq(a, b, size) (memcmp(a, b, size) == 0)
-#	define memzero(buf, size) memset(buf, 0, size)
-#endif
-
 #include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "xz.h"
+
+#define kmalloc(size, flags) malloc(size)
+#define kfree(ptr) free(ptr)
+#define vmalloc(size) malloc(size)
+#define vfree(ptr) free(ptr)
+
+#define memeq(a, b, size) (memcmp(a, b, size) == 0)
+#define memzero(buf, size) memset(buf, 0, size)
 
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #define min_t(type, x, y) min(x, y)
