@@ -172,7 +172,7 @@ static enum xz_ret XZ_FUNC dec_vli(struct xz_dec *s,
 		byte = in[*in_pos];
 		++*in_pos;
 
-		s->vli |= (uint64_t)(byte & 0x7F) << s->pos;
+		s->vli |= (vli_type)(byte & 0x7F) << s->pos;
 
 		if ((byte & 0x80) == 0) {
 			/* Don't allow non-minimal encodings. */
