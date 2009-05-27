@@ -7,6 +7,11 @@ XZ data compression in Linux
     executable data. CRC32 is supported for integrity checking. The
     usage of the xz_dec module is documented in include/linux/xz.h.
 
+    For decompressing the kernel image, initramfs, and initrd, there
+    is a wrapper function in lib/decompress_unxz.c. Its API is the
+    same as in other decompress_*.c files, which is defined in
+    include/linux/decompress/generic.h.
+
 Userspace tools
 
     XZ Utils include a zlib-like compression library and a gzip-like
@@ -44,11 +49,17 @@ Notes on compression options
         xz --check=crc32 --lzma2=dict=128KiB,nice=273,depth=512 inputfile
 
     An exception to above dictionary size limitation is when the decoder
-    is used in single-call mode. Compressing the kernel itself and
-    initramfs are examples of this situation. In this case the memory
-    usage doesn't depend on the dictionary size, and it is perfectly fine
-    to use a big dictionary: for maximum compression, the dictionary
-    should be at least as big as the uncompressed data itself.
+    is used in single-call mode. Compressing the kernel itself is an
+    example of this situation. In this case, the memory usage doesn't
+    depend on the dictionary size, and it is perfectly fine to use a big
+    dictionary: for maximum compression, the dictionary should be at
+    least as big as the uncompressed data itself.
+
+    Since Linux 2.6.30, initramfs and initrd no longer use single-call
+    decompression. The XZ decompressor function used for initramfs and
+    initrd decompression currently hardcodes the maximum supported LZMA2
+    dictionary size to 1 MiB. Thus, you probably want to use exactly
+    1 MiB dictionary when compressing the initramfs or initrd.
 
 Future plans
 
