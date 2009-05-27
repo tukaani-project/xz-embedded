@@ -253,41 +253,8 @@ static void * XZ_FUNC memmove(void *dest, const void *src, size_t size)
  * This API doesn't provide a way to specify the maximum dictionary size
  * for the multi-call mode of the native XZ decoder API. We will use
  * DICT_MAX bytes, which will be allocated with vmalloc().
- *
- * Input:
- *  - If in_size > 0, in is assumed to have in_size bytes of data that should
- *    be decompressed.
- *  - If in_size == 0 and in != NULL, in is assumed to have COMPR_IOBUF_SIZE
- *    bytes of space that we can use with fill(). (COMPR_IOBUF_SIZE is
- *    defined in <linux/decompress/generic.h>.)
- *  - If in_size == 0 and in == NULL, we will kmalloc() a temporary buffer
- *    of COMPR_IOBUF_SIZE bytes to be used with fill().
- *  - If in_used != NULL, the amount of input used after successful
- *    decompression will be stored in *in_used. If an error occurs,
- *    the value of *in_used is undefined.
- *
- * Output:
- *  - If flush == NULL, out is used the output buffer and flush() is not
- *    used. We don't know the size of the output buffer though, so we just
- *    hope that we don't overflow it. We also don't have any way to tell
- *    the caller how much uncompressed output we produced. This is OK when
- *    decompressing the kernel image.
- *  - If flush != NULL, out is ignored. We will kmalloc() a temporary buffer
- *    of COMPR_IOBUF_SIZE bytes to be used with flush().
- *
- * Memory usage:
- *  - If fill() and flush() are not used, about 30 KiB of memory is needed.
- *  - If fill() or flush() is used, about 30 KiB + DICT_SIZE bytes of memory
- *    is needed.
- *  - The memory allocator should return 8-byte aligned pointers, because
- *    there are a few uint64_t variables in the XZ decompressor.
- *
- * Error handling:
- *  - If decompression is successful, this function returns zero.
- *  - If an error occurs, error() is called with a string constant describing
- *    the error. If error() returns, this function returns -1.
  */
-XZ_EXTERN int XZ_FUNC unxz(unsigned char *in, int in_size,
+XZ_EXTERN int XZ_FUNC unxz(/*const*/ unsigned char *in, int in_size,
 		int (*fill)(void *dest, unsigned int size),
 		int (*flush)(/*const*/ void *src, unsigned int size),
 		unsigned char *out, int *in_used,
@@ -296,12 +263,10 @@ XZ_EXTERN int XZ_FUNC unxz(unsigned char *in, int in_size,
 	struct xz_buf b;
 	struct xz_dec *s;
 	enum xz_ret ret;
-	int tmp;
-	bool in_allocated = false;
 
 	xz_crc32_init();
 
-	if (in_size > 0 && flush == NULL)
+	if (in != NULL && out != NULL)
 		s = xz_dec_init(0);
 	else
 		s = xz_dec_init(DICT_MAX);
@@ -312,42 +277,38 @@ XZ_EXTERN int XZ_FUNC unxz(unsigned char *in, int in_size,
 	b.in = in;
 	b.in_pos = 0;
 	b.in_size = in_size;
-	b.out = out;
 	b.out_pos = 0;
-	b.out_size = (size_t)-1;
 
 	if (in_used != NULL)
 		*in_used = 0;
 
-	if (in_size > 0 && flush == NULL) {
+	if (fill == NULL && flush == NULL) {
+		b.out = out;
+		b.out_size = (size_t)-1;
 		ret = xz_dec_run(s, &b);
 	} else {
-		if (in == NULL) {
+		b.out_size = COMPR_IOBUF_SIZE;
+		b.out = kmalloc(COMPR_IOBUF_SIZE, GFP_KERNEL);
+		if (b.out == NULL)
+			goto error_alloc_out;
+
+		if (fill != NULL) {
 			in = kmalloc(COMPR_IOBUF_SIZE, GFP_KERNEL);
 			if (in == NULL)
 				goto error_alloc_in;
 
-			in_allocated = true;
 			b.in = in;
 		}
 
-		if (flush != NULL) {
-			b.out = kmalloc(COMPR_IOBUF_SIZE, GFP_KERNEL);
-			if (b.out == NULL)
-				goto error_alloc_out;
-
-			b.out_size = COMPR_IOBUF_SIZE;
-		}
-
 		do {
-			if (b.in_pos == b.in_size && in_size == 0) {
+			if (b.in_pos == b.in_size && fill != NULL) {
 				if (in_used != NULL)
 					*in_used += b.in_pos;
 
 				b.in_pos = 0;
 
-				tmp = fill(in, COMPR_IOBUF_SIZE);
-				if (tmp < 0) {
+				in_size = fill(in, COMPR_IOBUF_SIZE);
+				if (in_size < 0) {
 					/*
 					 * This isn't an optimal error code
 					 * but it probably isn't worth making
@@ -357,27 +318,28 @@ XZ_EXTERN int XZ_FUNC unxz(unsigned char *in, int in_size,
 					break;
 				}
 
-				b.in_size = tmp;
+				b.in_size = in_size;
 			}
 
 			ret = xz_dec_run(s, &b);
 
-			if (flush != NULL) {
-				if (b.out_pos == b.out_size || ret != XZ_OK) {
-					if (flush(b.out, b.out_pos)
-							!= b.out_pos)
-						ret = XZ_BUF_ERROR;
+			if (b.out_pos == b.out_size || ret != XZ_OK) {
+				/*
+				 * Setting ret here may hide an error
+				 * returned by xz_dec_run(), but probably
+				 * it's not too bad.
+				 */
+				if (flush(b.out, b.out_pos) != b.out_pos)
+					ret = XZ_BUF_ERROR;
 
-					b.out_pos = 0;
-				}
+				b.out_pos = 0;
 			}
 		} while (ret == XZ_OK);
 
-		if (flush != NULL)
-			kfree(b.out);
-
-		if (in_allocated)
+		if (fill != NULL)
 			kfree(in);
+
+		kfree(b.out);
 	}
 
 	if (in_used != NULL)
@@ -414,21 +376,20 @@ XZ_EXTERN int XZ_FUNC unxz(unsigned char *in, int in_size,
 		break;
 
 	default:
-		error("Bug in the XZ decoder");
+		error("Bug in the XZ decompressor");
 		break;
 	}
 
 	return -1;
 
-error_alloc_out:
-	if (in_allocated)
-		kfree(in);
-
 error_alloc_in:
+	kfree(b.out);
+
+error_alloc_out:
 	xz_dec_end(s);
 
 error_alloc_state:
-	error("XZ decoder ran out of memory");
+	error("XZ decompressor ran out of memory");
 	return -1;
 }
 
