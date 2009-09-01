@@ -711,8 +711,10 @@ XZ_EXTERN struct xz_dec * XZ_FUNC xz_dec_init(uint32_t dict_max)
 	if (s == NULL)
 		return NULL;
 
+	s->single_call = dict_max == 0;
+
 #ifdef XZ_DEC_BCJ
-	s->bcj = xz_dec_bcj_create();
+	s->bcj = xz_dec_bcj_create(s->single_call);
 	if (s->bcj == NULL)
 		goto error_bcj;
 #endif
@@ -721,7 +723,6 @@ XZ_EXTERN struct xz_dec * XZ_FUNC xz_dec_init(uint32_t dict_max)
 	if (s->lzma2 == NULL)
 		goto error_lzma2;
 
-	s->single_call = dict_max == 0;
 	xz_dec_reset(s);
 	return s;
 

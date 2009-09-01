@@ -93,7 +93,7 @@ XZ_EXTERN void XZ_FUNC xz_dec_lzma2_end(struct xz_dec_lzma2 *s);
  * Allocate memory for BCJ decoders. xz_dec_bcj_reset() must be used before
  * calling xz_dec_bcj_run().
  */
-XZ_EXTERN struct xz_dec_bcj * XZ_FUNC xz_dec_bcj_create(void);
+XZ_EXTERN struct xz_dec_bcj * XZ_FUNC xz_dec_bcj_create(bool single_call);
 
 /*
  * Decode the Filter ID of a BCJ filter. This implementation doesn't
