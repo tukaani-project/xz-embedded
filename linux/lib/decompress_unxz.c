@@ -245,6 +245,9 @@ static void * XZ_FUNC memmove(void *dest, const void *src, size_t size)
  */
 #define DICT_MAX (1024 * 1024)
 
+/* Size of the input and output buffers in multi-call mode */
+#define XZ_IOBUF_SIZE 4096
+
 /*
  * This function implements the API defined in <linux/decompress/generic.h>.
  *
@@ -290,13 +293,13 @@ XZ_EXTERN int XZ_FUNC unxz(/*const*/ unsigned char *in, int in_size,
 		b.out_size = (size_t)-1;
 		ret = xz_dec_run(s, &b);
 	} else {
-		b.out_size = COMPR_IOBUF_SIZE;
-		b.out = kmalloc(COMPR_IOBUF_SIZE, GFP_KERNEL);
+		b.out_size = XZ_IOBUF_SIZE;
+		b.out = kmalloc(XZ_IOBUF_SIZE, GFP_KERNEL);
 		if (b.out == NULL)
 			goto error_alloc_out;
 
 		if (fill != NULL) {
-			in = kmalloc(COMPR_IOBUF_SIZE, GFP_KERNEL);
+			in = kmalloc(XZ_IOBUF_SIZE, GFP_KERNEL);
 			if (in == NULL)
 				goto error_alloc_in;
 
@@ -310,7 +313,7 @@ XZ_EXTERN int XZ_FUNC unxz(/*const*/ unsigned char *in, int in_size,
 
 				b.in_pos = 0;
 
-				in_size = fill(in, COMPR_IOBUF_SIZE);
+				in_size = fill(in, XZ_IOBUF_SIZE);
 				if (in_size < 0) {
 					/*
 					 * This isn't an optimal error code
