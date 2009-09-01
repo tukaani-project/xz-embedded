@@ -16,7 +16,7 @@ Userspace tools
 
     XZ Utils include a zlib-like compression library and a gzip-like
     command line tool. XZ Utils can be downloaded from
-    <http://tukaani.org/xz/>. From the same webiste, you can also
+    <http://tukaani.org/xz/>. From the same website, you can also
     find latest development versions of the XZ code used in Linux,
     and information how to use that code outside the Linux kernel too.
 
