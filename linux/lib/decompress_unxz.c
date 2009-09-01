@@ -1,8 +1,6 @@
 /*
  * XZ decoder as a single file for uncompressing the kernel and initramfs
  *
- * NOTE: This file hasn't been tested in kernel space yet!
- *
  * Author: Lasse Collin <lasse.collin@tukaani.org>
  *
  * This file has been put into the public domain.
