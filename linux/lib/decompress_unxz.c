@@ -220,10 +220,15 @@ static void * XZ_FUNC memmove(void *dest, const void *src, size_t size)
 }
 #endif
 
-/* Since we need memmove anyway, use it as memcpy too. */
+/*
+ * Since we need memmove anyway, would use it as memcpy too.
+ * Commented out for now to avoid breaking things.
+ */
+/*
 #ifndef memcpy
 #	define memcpy memmove
 #endif
+*/
 #endif /* XZ_STATIC */
 
 #include "xz/xz_crc32.c"
