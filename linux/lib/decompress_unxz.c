@@ -329,7 +329,7 @@ XZ_EXTERN int XZ_FUNC unxz(/*const*/ unsigned char *in, int in_size,
 				 * returned by xz_dec_run(), but probably
 				 * it's not too bad.
 				 */
-				if (flush(b.out, b.out_pos) != b.out_pos)
+				if (flush(b.out, b.out_pos) != (int)b.out_pos)
 					ret = XZ_BUF_ERROR;
 
 				b.out_pos = 0;
