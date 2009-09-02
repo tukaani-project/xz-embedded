@@ -2,41 +2,74 @@
 XZ data compression in Linux
 ============================
 
-    The xz_dec module provides XZ decoder which supports the LZMA2
-    filter, and optionally also Branch/Call/Jump (BCJ) filters for
-    executable data. CRC32 is supported for integrity checking. The
-    usage of the xz_dec module is documented in include/linux/xz.h.
+Introduction
+
+    XZ is a general purpose data compression format with high compression
+    ratio and relatively fast decompression. The primary compression
+    algorithm (filter) is LZMA2. Additional filters can be used to improve
+    compression ratio even further. E.g. Branch/Call/Jump (BCJ) filters
+    improve compression ratio of executable data.
+
+    The XZ decompressor in Linux is called XZ Embedded. It supports
+    the LZMA2 filter and optionally also BCJ filters. CRC32 is supported
+    for integrity checking. The home page of XZ Embedded is at
+    <http://tukaani.org/xz/embedded.html>, where you can find the
+    latest version and also information about using the code outside
+    the Linux kernel.
+
+    For userspace, XZ Utils provide a zlib-like compression library
+    and a gzip-like command line tool. XZ Utils can be downloaded from
+    <http://tukaani.org/xz/>.
+
+XZ related components in the kernel
+
+    The xz_dec module provides XZ decompressor with single-call (buffer
+    to buffer) and multi-call (stateful) APIs. The usage of the xz_dec
+    module is documented in include/linux/xz.h.
+
+    The xz_dec_test module is for testing xz_dec. xz_dec_test is not
+    useful unless you are hacking the XZ decompressor. xz_dec_test
+    allocates a char device major dynamically to which one can write
+    .xz files from userspace. The decompressed output is thrown away.
+    Keep an eye on dmesg to see diagnostics printed by xz_dec_test.
+    See the xz_dec_test source code for the details.
 
     For decompressing the kernel image, initramfs, and initrd, there
     is a wrapper function in lib/decompress_unxz.c. Its API is the
     same as in other decompress_*.c files, which is defined in
     include/linux/decompress/generic.h.
 
-Userspace tools
+    scripts/xz_wrap.sh is a wrapper for the xz command line tool shipped
+    in XZ Utils. The wrapper sets compression options to values suitable
+    for use in the kernel. Scripts included in the kernel should use
+    xz_wrap.sh instead of running the xz tool directly.
 
-    XZ Utils include a zlib-like compression library and a gzip-like
-    command line tool. XZ Utils can be downloaded from
-    <http://tukaani.org/xz/>. From the same website, you can also
-    find latest development versions of the XZ code used in Linux,
-    and information how to use that code outside the Linux kernel too.
+    For kernel makefiles, two commands are provided for use with
+    $(call if_needed). The kernel image itself should be compressed with
+    $(call if_needed,xzkern) while other things like initramfs should
+    be compressed with $(call if_needed,xzmisc).
 
 Notes on compression options
 
-    Since the XZ implementation in the kernel supports only streams with
-    no integrity check or CRC32, make sure that you don't use some other
-    integrity check type when encoding files that are supposed to be
-    decoded by the kernel. In liblzma, you need to use either
-    LZMA_CHECK_NONE or LZMA_CHECK_CRC32 when encoding. In the xz command
-    line tool, use --check=none or --check=crc32 (-Cnone and -Ccrc32 are
-    the short option counterparts).
+    In-kernel scripts and makefiles should have little need to worry
+    about compression options, since xz_wrap.sh should select the correct
+    options (if it doesn't, it needs to be improved). Thus, the following
+    is useful primarily for the kernel users who need to create .xz files
+    which will be decompressed by the kernel (e.g. initramfs images).
+
+    Since the XZ Embedded supports only streams with no integrity check or
+    CRC32, make sure that you don't use some other integrity check type
+    when encoding files that are supposed to be decoded by the kernel. With
+    liblzma, you need to use either LZMA_CHECK_NONE or LZMA_CHECK_CRC32
+    when encoding. With the xz command line tool, use --check=none or
+    --check=crc32.
 
     Using CRC32 is strongly recommended unless there is some other layer
     which will verify the integrity of the uncompressed data anyway.
-    Double checking the integrity would probably be waste of CPU cycles,
-    so feel free to use LZMA_CHECK_NONE or --check=none. Note that the
-    headers will always have a CRC32 which will be validated by the
-    decoder; you can only change the integrity check type (or disable it)
-    for the actual uncompressed data.
+    Double checking the integrity would probably be waste of CPU cycles.
+    Note that the headers will always have a CRC32 which will be validated
+    by the decoder; you can only change the integrity check type (or
+    disable it) for the actual uncompressed data.
 
     In userspace, LZMA2 is typically used with dictionary sizes of several
     megabytes. The decoder needs to have the dictionary in RAM, thus big
@@ -46,7 +79,7 @@ Notes on compression options
     when creating files for the kernel, so don't hesitate to use custom
     settings. Example:
 
-        xz --check=crc32 --lzma2=dict=128KiB,nice=273,depth=512 inputfile
+        xz --check=crc32 --lzma2=preset=6e,dict=512KiB inputfile
 
     An exception to above dictionary size limitation is when the decoder
     is used in single-call mode. Compressing the kernel itself is an
@@ -68,6 +101,12 @@ Future plans
     the fastest settings, so it isn't clear if LZMA2 encoder is wanted
     into the kernel.
 
+    Currently xz_wrap.sh uses a BCJ filter only when compressing a kernel
+    image. xz_wrap.sh could try using a BCJ filter also when compressing
+    other data, but since BCJ is not always a good idea e.g. for initramfs,
+    xz_wrap.sh should compress the data twice, with and without BCJ, and
+    select the smaller one.
+
 Conformance to the .xz file format specification
 
     There are a couple of corner cases where things have been simplified
@@ -78,10 +117,14 @@ Conformance to the .xz file format specification
 
 Reporting bugs
 
-    Report bugs to <lasse.collin@tukaani.org> or (preferably) visit
-    #tukaani on Freenode and talk to Larhzu. I don't actively read
-    LKML or other kernel-related mailing lists, so if there's something
-    I should know, you must email to me personally or use IRC.
+    Before reporting a bug, please check that it's not fixed already
+    at upstream. See <http://tukaani.org/xz/embedded.html> to get the
+    latest code.
+
+    Report bugs to <lasse.collin@tukaani.org> or visit #tukaani on
+    Freenode and talk to Larhzu. I don't actively read LKML or other
+    kernel-related mailing lists, so if there's something I should know,
+    you should email to me personally or use IRC.
 
     Don't bother Igor Pavlov with questions about the XZ implementation
     in the kernel or about XZ Utils. While these two implementations
