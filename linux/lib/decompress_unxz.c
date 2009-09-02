@@ -93,21 +93,28 @@
  */
 
 /*
- * Set the linkage of normally extern functions to static when compiling
- * the decompressor the kernel image. This must be done before including
- * <linux/decompress/mm.h>, which defines STATIC to be empty if it wasn't
- * already defined. We also define XZ_STATIC which is used only in ifdefs
- * to test if STATIC was defined before <linux/decompress/mm.h> was included.
+ * STATIC is defined to "static" if we are being built for kernel
+ * decompression (pre-boot code). <linux/decompress/mm.h> below will
+ * define STATIC to empty if it wasn't already defined. Since we will
+ * need to know if we are being used for kernel decompression, we define
+ * XZ_PREBOOT here.
  */
 #ifdef STATIC
-#	define XZ_EXTERN STATIC
-#	define XZ_STATIC
+#	define XZ_PREBOOT
 #endif
 
 #ifdef __KERNEL__
 #	include <linux/decompress/mm.h>
-#	include <linux/decompress/generic.h>
+#else
+#	define STATIC static
 #endif
+
+/*
+ * Set the linkage of normally extern functions to static. The only
+ * function that we might make extern is unxz(), and even that will
+ * depend on the STATIC macro.
+ */
+#define XZ_EXTERN static
 
 /*
  * Use INIT defined in <linux/decompress/mm.h> to possibly add __init
@@ -147,7 +154,7 @@
 
 #include "xz/xz_private.h"
 
-#ifdef XZ_STATIC
+#ifdef XZ_PREBOOT
 /*
  * Replace the normal allocation functions with the versions
  * from <linux/decompress/mm.h>.
@@ -229,7 +236,7 @@ static void * XZ_FUNC memmove(void *dest, const void *src, size_t size)
 #	define memcpy memmove
 #endif
 */
-#endif /* XZ_STATIC */
+#endif /* XZ_PREBOOT */
 
 #include "xz/xz_crc32.c"
 #include "xz/xz_dec_stream.c"
@@ -260,7 +267,7 @@ static void * XZ_FUNC memmove(void *dest, const void *src, size_t size)
  * for the multi-call mode of the native XZ decoder API. We will use
  * DICT_MAX bytes, which will be allocated with vmalloc().
  */
-XZ_EXTERN int XZ_FUNC unxz(/*const*/ unsigned char *in, int in_size,
+STATIC int XZ_FUNC unxz(/*const*/ unsigned char *in, int in_size,
 		int (*fill)(void *dest, unsigned int size),
 		int (*flush)(/*const*/ void *src, unsigned int size),
 		unsigned char *out, int *in_used,

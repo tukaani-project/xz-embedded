@@ -11,8 +11,8 @@
 #define XZ_PRIVATE_H
 
 #ifdef __KERNEL__
-	/* XZ_STATIC may be defined only via decompress_unxz.c. */
-#	ifndef XZ_STATIC
+	/* XZ_PREBOOT may be defined only via decompress_unxz.c. */
+#	ifndef XZ_PREBOOT
 #		include <linux/slab.h>
 #		include <linux/vmalloc.h>
 #		include <linux/string.h>
