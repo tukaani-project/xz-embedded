@@ -89,6 +89,7 @@ XZ_EXTERN enum xz_ret XZ_FUNC xz_dec_lzma2_run(
 /* Free the memory allocated for the LZMA2 decoder. */
 XZ_EXTERN void XZ_FUNC xz_dec_lzma2_end(struct xz_dec_lzma2 *s);
 
+#ifdef XZ_DEC_BCJ
 /*
  * Allocate memory for BCJ decoders. xz_dec_bcj_reset() must be used before
  * calling xz_dec_bcj_run().
@@ -114,5 +115,6 @@ XZ_EXTERN enum xz_ret XZ_FUNC xz_dec_bcj_run(struct xz_dec_bcj *s,
 
 /* Free the memory allocated for the BCJ filters. */
 #define xz_dec_bcj_end(s) kfree(s)
+#endif
 
 #endif
