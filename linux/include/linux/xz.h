@@ -186,7 +186,15 @@ XZ_EXTERN void XZ_FUNC xz_dec_end(struct xz_dec *s);
  * CRC32 module is used instead, and users of this module don't need to
  * care about the functions below.
  */
-#if !defined(__KERNEL__) || defined(XZ_INTERNAL_CRC32)
+#ifndef XZ_INTERNAL_CRC32
+#	ifdef __KERNEL__
+#		define XZ_INTERNAL_CRC32 0
+#	else
+#		define XZ_INTERNAL_CRC32 1
+#	endif
+#endif
+
+#if XZ_INTERNAL_CRC32
 /*
  * This must be called before any other xz_* function to initialize
  * the CRC32 lookup table.

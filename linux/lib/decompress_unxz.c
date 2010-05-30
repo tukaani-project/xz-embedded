@@ -128,7 +128,7 @@
  * Use the internal CRC32 code instead of kernel's CRC32 module, which
  * is not available in early phase of booting.
  */
-#define XZ_INTERNAL_CRC32
+#define XZ_INTERNAL_CRC32 1
 
 /*
  * Ignore the configuration specified in the kernel config for the xz_dec
