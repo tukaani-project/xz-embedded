@@ -72,6 +72,16 @@ int main(int argc, char **argv)
 		if (ret == XZ_OK)
 			continue;
 
+#ifdef XZ_DEC_ANY_CHECK
+		if (ret == XZ_UNSUPPORTED_CHECK) {
+			fputs(argv[0], stderr);
+			fputs(": ", stderr);
+			fputs("Unsupported check; not verifying "
+					"file integrity\n", stderr);
+			continue;
+		}
+#endif
+
 		if (fwrite(out, 1, b.out_pos, stdout) != b.out_pos
 				|| fclose(stdout)) {
 			msg = "Write error\n";

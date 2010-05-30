@@ -31,20 +31,29 @@
 
 /**
  * enum xz_ret - Return codes
- * @XZ_OK:              Everything is OK so far. More input or more output
- *                      space is required to continue.
- * @XZ_STREAM_END:      Operation finished successfully.
- * @XZ_MEMLIMIT_ERROR:  Not enough memory was preallocated at decoder
- *                      initialization time.
- * @XZ_FORMAT_ERROR:    File format was not recognized (wrong magic bytes).
- * @XZ_OPTIONS_ERROR:   This implementation doesn't support the requested
- *                      compression options. In the decoder this means that
- *                      the header CRC32 matches, but the header itself
- *                      specifies something that we don't support.
- * @XZ_DATA_ERROR:      Compressed data is corrupt.
- * @XZ_BUF_ERROR:       Cannot make any progress. Details are slightly
- *                      different between multi-call and single-call mode;
- *                      more information below.
+ * @XZ_OK:                  Everything is OK so far. More input or more
+ *                          output space is required to continue.
+ * @XZ_STREAM_END:          Operation finished successfully.
+ * @XZ_UNSUPPORTED_CHECK:   Integrity check type is not supported. Decoding
+ *                          is still possible in multi-call mode by simply
+ *                          calling xz_dec_run() again.
+ *                          NOTE: This return value is used only if
+ *                          XZ_DEC_ANY_CHECK was defined at build time,
+ *                          which is not used in the kernel. Unsupported
+ *                          check types return XZ_OPTIONS_ERROR if
+ *                          XZ_DEC_ANY_CHECK was not defined at build time.
+ * @XZ_MEMLIMIT_ERROR:      Not enough memory was preallocated at decoder
+ *                          initialization time.
+ * @XZ_FORMAT_ERROR:        File format was not recognized (wrong magic
+ *                          bytes).
+ * @XZ_OPTIONS_ERROR:       This implementation doesn't support the requested
+ *                          compression options. In the decoder this means
+ *                          that the header CRC32 matches, but the header
+ *                          itself specifies something that we don't support.
+ * @XZ_DATA_ERROR:          Compressed data is corrupt.
+ * @XZ_BUF_ERROR:           Cannot make any progress. Details are slightly
+ *                          different between multi-call and single-call
+ *                          mode; more information below.
  *
  * In multi-call mode, XZ_BUF_ERROR is returned when two consecutive calls
  * to XZ code cannot consume any input and cannot produce any new output.
@@ -62,6 +71,7 @@
 enum xz_ret {
 	XZ_OK,
 	XZ_STREAM_END,
+	XZ_UNSUPPORTED_CHECK,
 	XZ_MEMLIMIT_ERROR,
 	XZ_FORMAT_ERROR,
 	XZ_OPTIONS_ERROR,
