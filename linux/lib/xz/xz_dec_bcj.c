@@ -10,6 +10,12 @@
 
 #include "xz_private.h"
 
+/*
+ * The rest of the file is inside this ifdef. It makes things a little more
+ * convenient when building without support for any BCJ filters.
+ */
+#ifdef XZ_DEC_BCJ
+
 struct xz_dec_bcj {
 	/* Type of the BCJ filter being used */
 	enum {
@@ -554,3 +560,5 @@ XZ_EXTERN enum xz_ret XZ_FUNC xz_dec_bcj_reset(
 
 	return XZ_OK;
 }
+
+#endif

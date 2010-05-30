@@ -241,9 +241,7 @@ static void * XZ_FUNC memmove(void *dest, const void *src, size_t size)
 #include "xz/xz_crc32.c"
 #include "xz/xz_dec_stream.c"
 #include "xz/xz_dec_lzma2.c"
-#ifdef XZ_DEC_BCJ
-#	include "xz/xz_dec_bcj.c"
-#endif
+#include "xz/xz_dec_bcj.c"
 
 /*
  * Maximum LZMA2 dictionary size. This matters only in multi-call mode.
