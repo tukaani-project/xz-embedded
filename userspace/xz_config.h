@@ -69,6 +69,7 @@
 #endif
 
 /* Inline functions to access unaligned unsigned 32-bit integers */
+#ifndef get_unaligned_le32
 static inline uint32_t XZ_FUNC get_unaligned_le32(const uint8_t *buf)
 {
 	return (uint32_t)buf[0]
@@ -76,7 +77,9 @@ static inline uint32_t XZ_FUNC get_unaligned_le32(const uint8_t *buf)
 			| ((uint32_t)buf[2] << 16)
 			| ((uint32_t)buf[3] << 24);
 }
+#endif
 
+#ifndef get_unaligned_be32
 static inline uint32_t XZ_FUNC get_unaligned_be32(const uint8_t *buf)
 {
 	return (uint32_t)(buf[0] << 24)
@@ -84,7 +87,9 @@ static inline uint32_t XZ_FUNC get_unaligned_be32(const uint8_t *buf)
 			| ((uint32_t)buf[2] << 8)
 			| (uint32_t)buf[3];
 }
+#endif
 
+#ifndef put_unaligned_le32
 static inline void XZ_FUNC put_unaligned_le32(uint32_t val, uint8_t *buf)
 {
 	buf[0] = (uint8_t)val;
@@ -92,7 +97,9 @@ static inline void XZ_FUNC put_unaligned_le32(uint32_t val, uint8_t *buf)
 	buf[2] = (uint8_t)(val >> 16);
 	buf[3] = (uint8_t)(val >> 24);
 }
+#endif
 
+#ifndef put_unaligned_be32
 static inline void XZ_FUNC put_unaligned_be32(uint32_t val, uint8_t *buf)
 {
 	buf[0] = (uint8_t)(val >> 24);
@@ -100,12 +107,15 @@ static inline void XZ_FUNC put_unaligned_be32(uint32_t val, uint8_t *buf)
 	buf[2] = (uint8_t)(val >> 8);
 	buf[3] = (uint8_t)val;
 }
+#endif
 
 /*
  * Use get_unaligned_le32() also for aligned access for simplicity. On
  * little endian systems, #define get_le32(ptr) (*(const uint32_t *)(ptr))
  * could save a few bytes in code size.
  */
-#define get_le32 get_unaligned_le32
+#ifndef get_le32
+#	define get_le32 get_unaligned_le32
+#endif
 
 #endif
