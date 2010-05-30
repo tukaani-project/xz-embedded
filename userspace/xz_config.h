@@ -43,7 +43,7 @@
  * becomes slow.
  *
  * NOTE: System headers on GNU/Linux may #define this macro already,
- * so if you want to change it, it you need to #undef it first.
+ * so if you want to change it, you need to #undef it first.
  */
 #ifndef __always_inline
 #	ifdef __GNUC__

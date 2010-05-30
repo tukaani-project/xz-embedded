@@ -129,7 +129,7 @@ struct xz_dec;
  *
  * Because the output buffer is used as the workspace, streams encoded using
  * a big dictionary are not a problem in single-call. It is enough that the
- * output buffer is is big enough to hold the actual uncompressed data; it
+ * output buffer is big enough to hold the actual uncompressed data; it
  * can be smaller than the dictionary size stored in the stream headers.
  *
  * On success, xz_dec_init() returns a pointer to struct xz_dec, which is
