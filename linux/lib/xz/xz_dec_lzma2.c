@@ -34,7 +34,8 @@
  *
  * In multi-call mode, also these are true:
  *    end == size
- *    size <= allocated
+ *    size <= size_max
+ *    allocated <= size
  *
  * Most of these variables are size_t to support single-call mode,
  * in which the dictionary variables address the actual output
@@ -74,11 +75,20 @@ struct dictionary {
 	uint32_t size;
 
 	/*
-	 * Amount of memory allocated for the dictionary. A special
-	 * value of zero indicates that we are in single-call mode,
-	 * where the output buffer works as the dictionary.
+	 * Maximum allowed dictionary size in multi-call mode.
+	 * This is ignored in single-call mode.
+	 */
+	uint32_t size_max;
+
+	/*
+	 * Amount of memory currently allocated for the dictionary.
+	 * This is used only with XZ_DYNALLOC. (With XZ_PREALLOC,
+	 * size_max is always the same as the allocated size.)
 	 */
 	uint32_t allocated;
+
+	/* Operation mode */
+	enum xz_mode mode;
 };
 
 /* Range decoder */
@@ -269,7 +279,7 @@ struct xz_dec_lzma2 {
  */
 static void XZ_FUNC dict_reset(struct dictionary *dict, struct xz_buf *b)
 {
-	if (dict->allocated == 0) {
+	if (DEC_IS_SINGLE(dict->mode)) {
 		dict->buf = b->out + b->out_pos;
 		dict->end = b->out_size - b->out_pos;
 	}
@@ -379,7 +389,7 @@ static void XZ_FUNC dict_uncompressed(
 		if (dict->full < dict->pos)
 			dict->full = dict->pos;
 
-		if (dict->allocated != 0) {
+		if (DEC_IS_MULTI(dict->mode)) {
 			if (dict->pos == dict->end)
 				dict->pos = 0;
 
@@ -404,7 +414,7 @@ static uint32_t XZ_FUNC dict_flush(struct dictionary *dict, struct xz_buf *b)
 {
 	size_t copy_size = dict->pos - dict->start;
 
-	if (dict->allocated != 0) {
+	if (DEC_IS_MULTI(dict->mode)) {
 		if (dict->pos == dict->end)
 			dict->pos = 0;
 
@@ -1088,27 +1098,26 @@ XZ_EXTERN enum xz_ret XZ_FUNC xz_dec_lzma2_run(
 	return XZ_OK;
 }
 
-XZ_EXTERN struct xz_dec_lzma2 * XZ_FUNC xz_dec_lzma2_create(uint32_t dict_max)
+XZ_EXTERN struct xz_dec_lzma2 * XZ_FUNC xz_dec_lzma2_create(
+		enum xz_mode mode, uint32_t dict_max)
 {
-	struct xz_dec_lzma2 *s;
-
-	/* Maximum supported dictionary by this implementation is 3 GiB. */
-	if (dict_max > ((uint32_t)3 << 30))
-		return NULL;
-
-	s = kmalloc(sizeof(*s), GFP_KERNEL);
+	struct xz_dec_lzma2 *s = kmalloc(sizeof(*s), GFP_KERNEL);
 	if (s == NULL)
 		return NULL;
 
-	if (dict_max > 0) {
+	s->dict.mode = mode;
+	s->dict.size_max = dict_max;
+
+	if (DEC_IS_PREALLOC(mode)) {
 		s->dict.buf = vmalloc(dict_max);
 		if (s->dict.buf == NULL) {
 			kfree(s);
 			return NULL;
 		}
+	} else if (DEC_IS_DYNALLOC(mode)) {
+		s->dict.buf = NULL;
+		s->dict.allocated = 0;
 	}
-
-	s->dict.allocated = dict_max;
 
 	return s;
 }
@@ -1123,10 +1132,23 @@ XZ_EXTERN enum xz_ret XZ_FUNC xz_dec_lzma2_reset(
 	s->dict.size = 2 + (props & 1);
 	s->dict.size <<= (props >> 1) + 11;
 
-	if (s->dict.allocated > 0 && s->dict.allocated < s->dict.size)
-		return XZ_MEMLIMIT_ERROR;
+	if (DEC_IS_MULTI(s->dict.mode)) {
+		if (s->dict.size > s->dict.size_max)
+			return XZ_MEMLIMIT_ERROR;
 
-	s->dict.end = s->dict.size;
+		s->dict.end = s->dict.size;
+
+		if (DEC_IS_DYNALLOC(s->dict.mode)) {
+			if (s->dict.allocated < s->dict.size) {
+				vfree(s->dict.buf);
+				s->dict.buf = vmalloc(s->dict.size);
+				if (s->dict.buf == NULL) {
+					s->dict.allocated = 0;
+					return XZ_MEM_ERROR;
+				}
+			}
+		}
+	}
 
 	s->lzma.len = 0;
 
@@ -1140,7 +1162,7 @@ XZ_EXTERN enum xz_ret XZ_FUNC xz_dec_lzma2_reset(
 
 XZ_EXTERN void XZ_FUNC xz_dec_lzma2_end(struct xz_dec_lzma2 *s)
 {
-	if (s->dict.allocated > 0)
+	if (DEC_IS_MULTI(s->dict.mode))
 		vfree(s->dict.buf);
 
 	kfree(s);

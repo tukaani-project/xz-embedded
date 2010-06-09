@@ -25,7 +25,7 @@ int main(void)
 
 	xz_crc32_init();
 
-	s = xz_dec_init(0);
+	s = xz_dec_init(XZ_SINGLE, 0);
 	if (s == NULL) {
 		fputs("Initialization failed", stderr);
 		return 1;

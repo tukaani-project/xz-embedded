@@ -38,8 +38,11 @@ int main(int argc, char **argv)
 
 	xz_crc32_init();
 
-	/* Support up to 16 MiB dictionary. */
-	s = xz_dec_init(1 << 24);
+	/*
+	 * Support up to 64 MiB dictionary. The actually needed memory
+	 * is allocated once the headers have been parsed.
+	 */
+	s = xz_dec_init(XZ_DYNALLOC, 1 << 26);
 	if (s == NULL) {
 		msg = "Memory allocation failed\n";
 		goto error;
@@ -93,8 +96,12 @@ int main(int argc, char **argv)
 			xz_dec_end(s);
 			return 0;
 
+		case XZ_MEM_ERROR:
+			msg = "Memory allocation failed\n";
+			goto error;
+
 		case XZ_MEMLIMIT_ERROR:
-			msg = "Preallocated dictionary was too small\n";
+			msg = "Memory usage limit reached\n";
 			goto error;
 
 		case XZ_FORMAT_ERROR:
