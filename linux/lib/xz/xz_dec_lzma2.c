@@ -130,6 +130,21 @@ struct lzma_len_dec {
 };
 
 struct lzma_dec {
+	/* Distances of latest four matches */
+	uint32_t rep0;
+	uint32_t rep1;
+	uint32_t rep2;
+	uint32_t rep3;
+
+	/* Types of the most recently seen LZMA symbols */
+	enum lzma_state state;
+
+	/*
+	 * Length of a match. This is updated so that dict_repeat can
+	 * be called again to finish repeating the whole match.
+	 */
+	uint32_t len;
+
 	/*
 	 * LZMA properties or related bit masks (number of literal
 	 * context bits, a mask dervied from the number of literal
@@ -139,21 +154,6 @@ struct lzma_dec {
 	uint32_t lc;
 	uint32_t literal_pos_mask; /* (1 << lp) - 1 */
 	uint32_t pos_mask;         /* (1 << pb) - 1 */
-
-	/* Types of the most recently seen LZMA symbols */
-	enum lzma_state state;
-
-	/* Distances of latest four matches */
-	uint32_t rep0;
-	uint32_t rep1;
-	uint32_t rep2;
-	uint32_t rep3;
-
-	/*
-	 * Length of a match. This is updated so that dict_repeat can
-	 * be called again to finish repeating the whole match.
-	 */
-	uint32_t len;
 
 	/* If 1, it's a match. Otherwise it's a single 8-bit literal. */
 	uint16_t is_match[STATES][POS_STATES_MAX];
@@ -211,49 +211,59 @@ struct lzma_dec {
 	uint16_t literal[LITERAL_CODERS_MAX][LITERAL_CODER_SIZE];
 };
 
+struct lzma2_dec {
+	/* Position in xz_dec_lzma2_run(). */
+	enum lzma2_seq {
+		SEQ_CONTROL,
+		SEQ_UNCOMPRESSED_1,
+		SEQ_UNCOMPRESSED_2,
+		SEQ_COMPRESSED_0,
+		SEQ_COMPRESSED_1,
+		SEQ_PROPERTIES,
+		SEQ_LZMA_PREPARE,
+		SEQ_LZMA_RUN,
+		SEQ_COPY
+	} sequence;
+
+	/* Next position after decoding the compressed size of the chunk. */
+	enum lzma2_seq next_sequence;
+
+	/* Uncompressed size of LZMA chunk (2 MiB at maximum) */
+	uint32_t uncompressed;
+
+	/*
+	 * Compressed size of LZMA chunk or compressed/uncompressed
+	 * size of uncompressed chunk (64 KiB at maximum)
+	 */
+	uint32_t compressed;
+
+	/*
+	 * True if dictionary reset is needed. This is false before
+	 * the first chunk (LZMA or uncompressed).
+	 */
+	bool need_dict_reset;
+
+	/*
+	 * True if new LZMA properties are needed. This is false
+	 * before the first LZMA chunk.
+	 */
+	bool need_props;
+};
+
 struct xz_dec_lzma2 {
-	/* LZMA2 */
-	struct {
-		/* Position in xz_dec_lzma2_run(). */
-		enum lzma2_seq {
-			SEQ_CONTROL,
-			SEQ_UNCOMPRESSED_1,
-			SEQ_UNCOMPRESSED_2,
-			SEQ_COMPRESSED_0,
-			SEQ_COMPRESSED_1,
-			SEQ_PROPERTIES,
-			SEQ_LZMA_PREPARE,
-			SEQ_LZMA_RUN,
-			SEQ_COPY
-		} sequence;
-
-		/*
-		 * Next position after decoding the compressed size of
-		 * the chunk.
-		 */
-		enum lzma2_seq next_sequence;
-
-		/* Uncompressed size of LZMA chunk (2 MiB at maximum) */
-		uint32_t uncompressed;
-
-		/*
-		 * Compressed size of LZMA chunk or compressed/uncompressed
-		 * size of uncompressed chunk (64 KiB at maximum)
-		 */
-		uint32_t compressed;
-
-		/*
-		 * True if dictionary reset is needed. This is false before
-		 * the first chunk (LZMA or uncompressed).
-		 */
-		bool need_dict_reset;
-
-		/*
-		 * True if new LZMA properties are needed. This is false
-		 * before the first LZMA chunk.
-		 */
-		bool need_props;
-	} lzma2;
+	/*
+	 * The order below is important on x86 to reduce code size and
+	 * it shouldn't hurt on other platforms. Everything up to and
+	 * including lzma.pos_mask are in the first 128 bytes on x86-32,
+	 * which allows using smaller instructions to access those
+	 * variables. On x86-64, fewer variables fit into the first 128
+	 * bytes, but this is still the best order without sacrificing
+	 * the readability by splitting the structures.
+	 */
+	struct rc_dec rc;
+	struct dictionary dict;
+	struct lzma2_dec lzma2;
+	struct lzma_dec lzma;
 
 	/*
 	 * Temporary buffer which holds small number of input bytes between
@@ -263,10 +273,6 @@ struct xz_dec_lzma2 {
 		uint32_t size;
 		uint8_t buf[3 * LZMA_IN_REQUIRED];
 	} temp;
-
-	struct dictionary dict;
-	struct rc_dec rc;
-	struct lzma_dec lzma;
 };
 
 /**************
