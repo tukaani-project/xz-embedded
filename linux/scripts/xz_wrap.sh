@@ -22,7 +22,7 @@ LZMA2OPTS=
 # depends on the exact content of the initramfs image.
 case $1 in
 	kernel)
-		DICT=16MiB
+		DICT=32MiB
 		case $ARCH in
 			x86|x86_64)     BCJ=--x86 ;;
 			powerpc)        BCJ=--powerpc ;;
@@ -41,5 +41,4 @@ case $1 in
 esac
 
 # This is very slow, but it should give very good compression too.
-exec xz --stdout --quiet --threads=1 --check=crc32 \
-		$BCJ --lzma2=preset=6e,$LZMA2OPTS,dict=$DICT
+exec xz --stdout --check=crc32 $BCJ --lzma2=preset=6e,$LZMA2OPTS,dict=$DICT
