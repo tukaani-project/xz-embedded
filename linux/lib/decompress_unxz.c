@@ -243,13 +243,6 @@ static void * XZ_FUNC memmove(void *dest, const void *src, size_t size)
 #include "xz/xz_dec_lzma2.c"
 #include "xz/xz_dec_bcj.c"
 
-/*
- * Maximum LZMA2 dictionary size. This matters only in multi-call mode.
- * If you change this, remember to update also the error message in
- * "case XZ_MEMLIMIT_ERROR".
- */
-#define DICT_MAX (1024 * 1024)
-
 /* Size of the input and output buffers in multi-call mode */
 #define XZ_IOBUF_SIZE 4096
 
@@ -260,10 +253,6 @@ static void * XZ_FUNC memmove(void *dest, const void *src, size_t size)
  * of the native XZ decoder API. The single-call mode can be used only when
  * both input and output buffers are available as a single chunk, i.e. when
  * fill() and flush() won't be used.
- *
- * This API doesn't provide a way to specify the maximum dictionary size
- * for the multi-call mode of the native XZ decoder API. We will use
- * DICT_MAX bytes, which will be allocated with vmalloc().
  */
 STATIC int XZ_FUNC unxz(/*const*/ unsigned char *in, int in_size,
 		int (*fill)(void *dest, unsigned int size),
@@ -280,7 +269,7 @@ STATIC int XZ_FUNC unxz(/*const*/ unsigned char *in, int in_size,
 	if (in != NULL && out != NULL)
 		s = xz_dec_init(XZ_SINGLE, 0);
 	else
-		s = xz_dec_init(XZ_PREALLOC /*FIXME*/, DICT_MAX);
+		s = xz_dec_init(XZ_DYNALLOC, UINT32_MAX);
 
 	if (s == NULL)
 		goto error_alloc_state;
@@ -362,10 +351,9 @@ STATIC int XZ_FUNC unxz(/*const*/ unsigned char *in, int in_size,
 	case XZ_STREAM_END:
 		return 0;
 
-	case XZ_MEMLIMIT_ERROR:
+	case XZ_MEM_ERROR:
 		/* This can occur only in multi-call mode. */
-		error("Multi-call XZ decompressor limits "
-				"the LZMA2 dictionary to 1 MiB");
+		error("XZ decompressor ran out of memory");
 		break;
 
 	case XZ_FORMAT_ERROR:
