@@ -182,7 +182,7 @@ static int __init xz_dec_test_init(void)
 		.write = &xz_dec_test_write
 	};
 
-	state = xz_dec_init(DICT_MAX);
+	state = xz_dec_init(XZ_PREALLOC, DICT_MAX);
 	if (state == NULL)
 		return -ENOMEM;
 
