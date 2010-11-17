@@ -269,7 +269,7 @@ STATIC int XZ_FUNC unxz(/*const*/ unsigned char *in, int in_size,
 	if (in != NULL && out != NULL)
 		s = xz_dec_init(XZ_SINGLE, 0);
 	else
-		s = xz_dec_init(XZ_DYNALLOC, UINT32_MAX);
+		s = xz_dec_init(XZ_DYNALLOC, (uint32_t)-1);
 
 	if (s == NULL)
 		goto error_alloc_state;
