@@ -208,7 +208,8 @@ static void XZ_FUNC memzero(void *buf, size_t size)
 #endif
 
 #ifndef memmove
-static void * XZ_FUNC memmove(void *dest, const void *src, size_t size)
+/* Not static to avoid a conflict with the prototype in the Linux headers. */
+void * XZ_FUNC memmove(void *dest, const void *src, size_t size)
 {
 	uint8_t *d = dest;
 	const uint8_t *s = src;
