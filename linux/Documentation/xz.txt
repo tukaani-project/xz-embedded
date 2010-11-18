@@ -39,23 +39,19 @@ XZ related components in the kernel
     same as in other decompress_*.c files, which is defined in
     include/linux/decompress/generic.h.
 
-    scripts/xz_wrap.sh is a wrapper for the xz command line tool shipped
-    in XZ Utils. The wrapper sets compression options to values suitable
-    for use in the kernel. Scripts included in the kernel should use
-    xz_wrap.sh instead of running the xz tool directly.
+    scripts/xz_wrap.sh is a wrapper for the xz command line tool found
+    from XZ Utils. The wrapper sets compression options to values suitable
+    for compressing the kernel image.
 
     For kernel makefiles, two commands are provided for use with
-    $(call if_needed). The kernel image itself should be compressed with
-    $(call if_needed,xzkern) while other things like initramfs should
-    be compressed with $(call if_needed,xzmisc).
+    $(call if_needed). The kernel image should be compressed with
+    $(call if_needed,xzkern) which will use a BCJ filter and a big LZMA2
+    dictionary. It will also append a four-byte trailer containing the
+    uncompressed size of the file, which is needed by the boot code.
+    Other things should be compressed with $(call if_needed,xzmisc)
+    which will use no BCJ filter and 1 MiB LZMA2 dictionary.
 
 Notes on compression options
-
-    In-kernel scripts and makefiles should have little need to worry
-    about compression options, since xz_wrap.sh should select the correct
-    options (if it doesn't, it needs to be improved). Thus, the following
-    is useful primarily for the kernel users who need to create .xz files
-    which will be decompressed by the kernel (e.g. initramfs images).
 
     Since the XZ Embedded supports only streams with no integrity check or
     CRC32, make sure that you don't use some other integrity check type
@@ -75,24 +71,18 @@ Notes on compression options
     megabytes. The decoder needs to have the dictionary in RAM, thus big
     dictionaries cannot be used for files that are intended to be decoded
     by the kernel. 1 MiB is probably the maximum reasonable dictionary
-    size for in-kernel use. The presets in XZ Utils may not be optimal
-    when creating files for the kernel, so don't hesitate to use custom
-    settings. Example:
+    size for in-kernel use (maybe more is OK for initramfs). The presets
+    in XZ Utils may not be optimal when creating files for the kernel,
+    so don't hesitate to use custom settings. Example:
 
-        xz --check=crc32 --lzma2=preset=6e,dict=512KiB inputfile
+        xz --check=crc32 --lzma2=dict=512KiB inputfile
 
     An exception to above dictionary size limitation is when the decoder
-    is used in single-call mode. Compressing the kernel itself is an
-    example of this situation. In this case, the memory usage doesn't
-    depend on the dictionary size, and it is perfectly fine to use a big
-    dictionary: for maximum compression, the dictionary should be at
-    least as big as the uncompressed data itself.
-
-    Since Linux 2.6.30, initramfs and initrd no longer use single-call
-    decompression. The XZ decompressor function used for initramfs and
-    initrd decompression currently hardcodes the maximum supported LZMA2
-    dictionary size to 1 MiB. Thus, you probably want to use exactly
-    1 MiB dictionary when compressing the initramfs or initrd.
+    is used in single-call mode. Decompressing the kernel itself is an
+    example of this situation. In single-call mode, the memory usage
+    doesn't depend on the dictionary size, and it is perfectly fine to
+    use a big dictionary: for maximum compression, the dictionary should
+    be at least as big as the uncompressed data itself.
 
 Future plans
 
@@ -101,11 +91,10 @@ Future plans
     the fastest settings, so it isn't clear if LZMA2 encoder is wanted
     into the kernel.
 
-    Currently xz_wrap.sh uses a BCJ filter only when compressing a kernel
-    image. xz_wrap.sh could try using a BCJ filter also when compressing
-    other data, but since BCJ is not always a good idea e.g. for initramfs,
-    xz_wrap.sh should compress the data twice, with and without BCJ, and
-    select the smaller one.
+    Support for limited random-access reading is planned for the
+    decompression code. I don't know if it could have any use in the
+    kernel, but I know that it would be useful in some embedded projects
+    outside the Linux kernel.
 
 Conformance to the .xz file format specification
 
