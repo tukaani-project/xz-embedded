@@ -1,8 +1,7 @@
 #!/bin/sh
 #
-# This is a wrapper for xz to use appropriate compression options depending
-# on what is being compressed. The only argument to this script should be
-# "kernel" or "misc" to indicate what is being compressed.
+# This is a wrapper for xz to compress the kernel image using appropriate
+# compression options depending on the architecture.
 #
 # Author: Lasse Collin <lasse.collin@tukaani.org>
 #
@@ -10,35 +9,15 @@
 # You can do whatever you want with this file.
 #
 
-# Defaults: No BCJ filter and no extra LZMA2 options.
 BCJ=
 LZMA2OPTS=
 
-# Big dictionary is OK for the kernel image, but it's not OK
-# for other things.
-#
-# BCJ filter is used only for the kernel, at least for now.
-# It could be useful for non-trivial initramfs too, but it
-# depends on the exact content of the initramfs image.
-case $1 in
-	kernel)
-		DICT=32MiB
-		case $ARCH in
-			x86|x86_64)     BCJ=--x86 ;;
-			powerpc)        BCJ=--powerpc ;;
-			ia64)           BCJ=--ia64; LZMA2OPTS=pb=4 ;;
-			arm)            BCJ=--arm ;;
-			sparc)          BCJ=--sparc ;;
-		esac
-		;;
-	misc)
-		DICT=1MiB
-		;;
-	*)
-		echo "xz_wrap.sh: Invalid argument \`$1'" >&2
-		exit 1
-		;;
+case $ARCH in
+	x86|x86_64)     BCJ=--x86 ;;
+	powerpc)        BCJ=--powerpc ;;
+	ia64)           BCJ=--ia64; LZMA2OPTS=pb=4 ;;
+	arm)            BCJ=--arm ;;
+	sparc)          BCJ=--sparc ;;
 esac
 
-# This is very slow, but it should give very good compression too.
-exec xz --stdout --check=crc32 $BCJ --lzma2=preset=6e,$LZMA2OPTS,dict=$DICT
+exec xz --check=crc32 $BCJ --lzma2=$LZMA2OPTS,dict=32MiB
