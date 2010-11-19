@@ -14,8 +14,9 @@
  * is placed to the end of the output buffer, and the decompressor overwrites
  * most of the compressed data. There must be enough safety margin to
  * guarantee that the write position is always behind the read position.
- * The optimal safety margin for XZ with LZMA2 or BCJ+LZMA2 is calculated
- * below. Note that the margin with XZ is bigger than with Deflate (gzip)!
+ *
+ * The safety margin for XZ with LZMA2 or BCJ+LZMA2 is calculated below.
+ * Note that the margin with XZ is bigger than with Deflate (gzip)!
  *
  * The worst case for in-place decompression is that the beginning of
  * the file is compressed extremely well, and the rest of the file is
@@ -47,7 +48,7 @@
  * safety margin for LZMA2.
  *
  * LZMA2 stores the data in chunks. Each chunk has a header whose size is
- * at maximum of 6 bytes, but to get round 2^n numbers, let's assume that
+ * a maximum of 6 bytes, but to get round 2^n numbers, let's assume that
  * the maximum chunk header size is 8 bytes. After the chunk header, there
  * may be up to 64 KiB of actual payload in the chunk. Often the payload is
  * quite a bit smaller though; to be safe, let's assume that an average
