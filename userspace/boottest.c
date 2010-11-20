@@ -11,8 +11,8 @@
 #include <string.h>
 #include <stdio.h>
 
-#define XZ_EXTERN static
-#define COMPR_IOBUF_SIZE 4096
+#define STATIC static
+#define INIT
 
 static void error(/*const*/ char *msg)
 {

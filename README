@@ -125,12 +125,3 @@ Notes about shared libraries
     no API or ABI stability guarantees between different versions of
     XZ Embedded.
 
-Specifying the calling convention
-
-    XZ_FUNC macro was included to support declaring functions with __init
-    in Linux. Outside Linux, it can be used to specify the calling
-    convention on systems that support multiple calling conventions.
-    For example, on Windows, you may make all functions use the stdcall
-    calling convention by defining XZ_FUNC=__stdcall when building and
-    using the functions from XZ Embedded.
-

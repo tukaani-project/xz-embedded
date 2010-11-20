@@ -82,7 +82,7 @@ struct xz_dec_bcj {
  */
 #define bcj_x86_test_msbyte(b) ((b) == 0x00 || (b) == 0xFF)
 
-static noinline_for_stack size_t XZ_FUNC bcj_x86(
+static noinline_for_stack size_t bcj_x86(
 		struct xz_dec_bcj *s, uint8_t *buf, size_t size)
 {
 	static const bool mask_to_allowed_status[8]
@@ -155,7 +155,7 @@ static noinline_for_stack size_t XZ_FUNC bcj_x86(
 #endif
 
 #ifdef XZ_DEC_POWERPC
-static noinline_for_stack size_t XZ_FUNC bcj_powerpc(
+static noinline_for_stack size_t bcj_powerpc(
 		struct xz_dec_bcj *s, uint8_t *buf, size_t size)
 {
 	size_t i;
@@ -177,7 +177,7 @@ static noinline_for_stack size_t XZ_FUNC bcj_powerpc(
 #endif
 
 #ifdef XZ_DEC_IA64
-static noinline_for_stack size_t XZ_FUNC bcj_ia64(
+static noinline_for_stack size_t bcj_ia64(
 		struct xz_dec_bcj *s, uint8_t *buf, size_t size)
 {
 	static const uint8_t branch_table[32] = {
@@ -262,7 +262,7 @@ static noinline_for_stack size_t XZ_FUNC bcj_ia64(
 #endif
 
 #ifdef XZ_DEC_ARM
-static noinline_for_stack size_t XZ_FUNC bcj_arm(
+static noinline_for_stack size_t bcj_arm(
 		struct xz_dec_bcj *s, uint8_t *buf, size_t size)
 {
 	size_t i;
@@ -286,7 +286,7 @@ static noinline_for_stack size_t XZ_FUNC bcj_arm(
 #endif
 
 #ifdef XZ_DEC_ARMTHUMB
-static noinline_for_stack size_t XZ_FUNC bcj_armthumb(
+static noinline_for_stack size_t bcj_armthumb(
 		struct xz_dec_bcj *s, uint8_t *buf, size_t size)
 {
 	size_t i;
@@ -315,7 +315,7 @@ static noinline_for_stack size_t XZ_FUNC bcj_armthumb(
 #endif
 
 #ifdef XZ_DEC_SPARC
-static noinline_for_stack size_t XZ_FUNC bcj_sparc(
+static noinline_for_stack size_t bcj_sparc(
 		struct xz_dec_bcj *s, uint8_t *buf, size_t size)
 {
 	size_t i;
@@ -345,7 +345,7 @@ static noinline_for_stack size_t XZ_FUNC bcj_sparc(
  * pointers, which could be problematic in the kernel boot code, which must
  * avoid pointers to static data (at least on x86).
  */
-static void XZ_FUNC bcj_apply(struct xz_dec_bcj *s,
+static void bcj_apply(struct xz_dec_bcj *s,
 		uint8_t *buf, size_t *pos, size_t size)
 {
 	size_t filtered;
@@ -399,7 +399,7 @@ static void XZ_FUNC bcj_apply(struct xz_dec_bcj *s,
  * Move the remaining mixture of possibly filtered and unfiltered
  * data to the beginning of temp.
  */
-static void XZ_FUNC bcj_flush(struct xz_dec_bcj *s, struct xz_buf *b)
+static void bcj_flush(struct xz_dec_bcj *s, struct xz_buf *b)
 {
 	size_t copy_size;
 
@@ -417,7 +417,7 @@ static void XZ_FUNC bcj_flush(struct xz_dec_bcj *s, struct xz_buf *b)
  * data in chunks of 1-16 bytes. To hide this issue, this function does
  * some buffering.
  */
-XZ_EXTERN enum xz_ret XZ_FUNC xz_dec_bcj_run(struct xz_dec_bcj *s,
+XZ_EXTERN enum xz_ret xz_dec_bcj_run(struct xz_dec_bcj *s,
 		struct xz_dec_lzma2 *lzma2, struct xz_buf *b)
 {
 	size_t out_start;
@@ -513,7 +513,7 @@ XZ_EXTERN enum xz_ret XZ_FUNC xz_dec_bcj_run(struct xz_dec_bcj *s,
 	return s->ret;
 }
 
-XZ_EXTERN struct xz_dec_bcj * XZ_FUNC xz_dec_bcj_create(bool single_call)
+XZ_EXTERN struct xz_dec_bcj *xz_dec_bcj_create(bool single_call)
 {
 	struct xz_dec_bcj *s = kmalloc(sizeof(*s), GFP_KERNEL);
 	if (s != NULL)
@@ -522,7 +522,7 @@ XZ_EXTERN struct xz_dec_bcj * XZ_FUNC xz_dec_bcj_create(bool single_call)
 	return s;
 }
 
-XZ_EXTERN enum xz_ret XZ_FUNC xz_dec_bcj_reset(
+XZ_EXTERN enum xz_ret xz_dec_bcj_reset(
 		struct xz_dec_bcj *s, uint8_t id)
 {
 	switch (id) {

@@ -95,36 +95,22 @@
 
 /*
  * STATIC is defined to "static" if we are being built for kernel
- * decompression (pre-boot code). <linux/decompress/mm.h> below will
- * define STATIC to empty if it wasn't already defined. Since we will
- * need to know if we are being used for kernel decompression, we define
+ * decompression (pre-boot code). <linux/decompress/mm.h> will define
+ * STATIC to empty if it wasn't already defined. Since we will need to
+ * know later if we are being used for kernel decompression, we define
  * XZ_PREBOOT here.
  */
 #ifdef STATIC
 #	define XZ_PREBOOT
 #endif
-
 #ifdef __KERNEL__
 #	include <linux/decompress/mm.h>
+#endif
+#define XZ_EXTERN STATIC
+
+#ifndef XZ_PREBOOT
+#	include <linux/xz.h>
 #else
-#	define STATIC static
-#endif
-
-/*
- * Set the linkage of normally extern functions to static. The only
- * function that we might make extern is unxz(), and even that will
- * depend on the STATIC macro.
- */
-#define XZ_EXTERN static
-
-/*
- * Use INIT defined in <linux/decompress/mm.h> to possibly add __init
- * to every function.
- */
-#ifdef INIT
-#	define XZ_FUNC INIT
-#endif
-
 /*
  * Use the internal CRC32 code instead of kernel's CRC32 module, which
  * is not available in early phase of booting.
@@ -153,9 +139,12 @@
 #	define XZ_DEC_SPARC
 #endif
 
+/*
+ * This will get the basic headers so that memeq() and others
+ * can be defined.
+ */
 #include "xz/xz_private.h"
 
-#ifdef XZ_PREBOOT
 /*
  * Replace the normal allocation functions with the versions
  * from <linux/decompress/mm.h>.
@@ -184,7 +173,7 @@
  */
 
 #ifndef memeq
-static bool XZ_FUNC memeq(const void *a, const void *b, size_t size)
+static bool memeq(const void *a, const void *b, size_t size)
 {
 	const uint8_t *x = a;
 	const uint8_t *y = b;
@@ -199,7 +188,7 @@ static bool XZ_FUNC memeq(const void *a, const void *b, size_t size)
 #endif
 
 #ifndef memzero
-static void XZ_FUNC memzero(void *buf, size_t size)
+static void memzero(void *buf, size_t size)
 {
 	uint8_t *b = buf;
 	uint8_t *e = b + size;
@@ -210,7 +199,7 @@ static void XZ_FUNC memzero(void *buf, size_t size)
 
 #ifndef memmove
 /* Not static to avoid a conflict with the prototype in the Linux headers. */
-void * XZ_FUNC memmove(void *dest, const void *src, size_t size)
+void *memmove(void *dest, const void *src, size_t size)
 {
 	uint8_t *d = dest;
 	const uint8_t *s = src;
@@ -238,12 +227,13 @@ void * XZ_FUNC memmove(void *dest, const void *src, size_t size)
 #	define memcpy memmove
 #endif
 */
-#endif /* XZ_PREBOOT */
 
 #include "xz/xz_crc32.c"
 #include "xz/xz_dec_stream.c"
 #include "xz/xz_dec_lzma2.c"
 #include "xz/xz_dec_bcj.c"
+
+#endif /* XZ_PREBOOT */
 
 /* Size of the input and output buffers in multi-call mode */
 #define XZ_IOBUF_SIZE 4096
@@ -256,7 +246,7 @@ void * XZ_FUNC memmove(void *dest, const void *src, size_t size)
  * both input and output buffers are available as a single chunk, i.e. when
  * fill() and flush() won't be used.
  */
-STATIC int XZ_FUNC unxz(/*const*/ unsigned char *in, int in_size,
+STATIC int INIT unxz(/*const*/ unsigned char *in, int in_size,
 		int (*fill)(void *dest, unsigned int size),
 		int (*flush)(/*const*/ void *src, unsigned int size),
 		unsigned char *out, int *in_used,
