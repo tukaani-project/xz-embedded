@@ -17,7 +17,15 @@
 
 #include "xz_private.h"
 
-static uint32_t xz_crc32_table[256];
+/*
+ * STATIC_RW_DATA is used in the pre-boot environment on some architectures.
+ * See <linux/decompress/mm.h> for details.
+ */
+#ifndef STATIC_RW_DATA
+#	define STATIC_RW_DATA static
+#endif
+
+STATIC_RW_DATA uint32_t xz_crc32_table[256];
 
 XZ_EXTERN void xz_crc32_init(void)
 {
