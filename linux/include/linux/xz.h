@@ -65,7 +65,7 @@ enum xz_mode {
  * @XZ_UNSUPPORTED_CHECK:   Integrity check type is not supported. Decoding
  *                          is still possible in multi-call mode by simply
  *                          calling xz_dec_run() again.
- *                          NOTE: This return value is used only if
+ *                          Note that this return value is used only if
  *                          XZ_DEC_ANY_CHECK was defined at build time,
  *                          which is not used in the kernel. Unsupported
  *                          check types return XZ_OPTIONS_ERROR if
@@ -100,7 +100,7 @@ enum xz_mode {
  * stream that is truncated or otherwise corrupt.
  *
  * In single-call mode, XZ_BUF_ERROR is returned only when the output buffer
- * is too small, or the compressed input is corrupt in a way that makes the
+ * is too small or the compressed input is corrupt in a way that makes the
  * decoder produce more output than the caller expected. When it is
  * (relatively) clear that the compressed input is truncated, XZ_DATA_ERROR
  * is used instead of XZ_BUF_ERROR.
@@ -201,8 +201,8 @@ XZ_EXTERN struct xz_dec *xz_dec_init(enum xz_mode mode, uint32_t dict_max);
  * The possible return values depend on build options and operation mode.
  * See enum xz_ret for details.
  *
- * NOTE: If an error occurs in single-call mode (return value is not
- * XZ_STREAM_END), b->in_pos and b->out_pos are not modified, and the
+ * Note that if an error occurs in single-call mode (return value is not
+ * XZ_STREAM_END), b->in_pos and b->out_pos are not modified and the
  * contents of the output buffer from b->out[b->out_pos] onward are
  * undefined. This is true even after XZ_BUF_ERROR, because with some filter
  * chains, there may be a second pass over the output buffer, and this pass
