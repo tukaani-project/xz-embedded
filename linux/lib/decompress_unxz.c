@@ -109,6 +109,7 @@
 #define XZ_EXTERN STATIC
 
 #ifndef XZ_PREBOOT
+#	include <linux/slab.h>
 #	include <linux/xz.h>
 #else
 /*
@@ -256,7 +257,9 @@ STATIC int INIT unxz(/*const*/ unsigned char *in, int in_size,
 	struct xz_dec *s;
 	enum xz_ret ret;
 
+#ifdef XZ_PREBOOT
 	xz_crc32_init();
+#endif
 
 	if (in != NULL && out != NULL)
 		s = xz_dec_init(XZ_SINGLE, 0);
