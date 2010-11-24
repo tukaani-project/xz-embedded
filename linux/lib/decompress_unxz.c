@@ -145,8 +145,10 @@
 #include "xz/xz_private.h"
 
 /*
- * Replace the normal allocation functions with the versions
- * from <linux/decompress/mm.h>.
+ * Replace the normal allocation functions with the versions from
+ * <linux/decompress/mm.h>. vfree() needs to support vfree(NULL)
+ * when XZ_DYNALLOC is used, but the pre-boot free() doesn't support it.
+ * Workaround it here because the other decompressors don't need it.
  */
 #undef kmalloc
 #undef kfree
@@ -155,7 +157,7 @@
 #define kmalloc(size, flags) malloc(size)
 #define kfree(ptr) free(ptr)
 #define vmalloc(size) malloc(size)
-#define vfree(ptr) free(ptr)
+#define vfree(ptr) do { if (ptr != NULL) free(ptr); } while (0)
 
 /*
  * FIXME: Not all basic memory functions are provided in architecture-specific
