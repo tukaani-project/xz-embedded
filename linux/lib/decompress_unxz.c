@@ -361,12 +361,8 @@ STATIC int INIT unxz(unsigned char *in, int in_size,
 		break;
 
 	case XZ_DATA_ERROR:
-		error("XZ-compressed data is corrupt");
-		break;
-
 	case XZ_BUF_ERROR:
-		error("Output buffer is too small or the "
-				"XZ-compressed data is corrupt");
+		error("XZ-compressed data is corrupt");
 		break;
 
 	default:
