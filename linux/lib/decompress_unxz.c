@@ -119,11 +119,9 @@
 #define XZ_INTERNAL_CRC32 1
 
 /*
- * Ignore the configuration specified in the kernel config for the xz_dec
- * module. For boot time use, we enable only the BCJ filter of the current
- * architecture, or none if no BCJ filter is available for the architecture.
+ * For boot time use, we enable only the BCJ filter of the current
+ * architecture or none if no BCJ filter is available for the architecture.
  */
-#define XZ_IGNORE_KCONFIG
 #ifdef CONFIG_X86
 #	define XZ_DEC_X86
 #endif

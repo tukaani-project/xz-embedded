@@ -11,19 +11,14 @@
 #define XZ_PRIVATE_H
 
 #ifdef __KERNEL__
+#	include <linux/xz.h>
+#	include <asm/byteorder.h>
+#	include <asm/unaligned.h>
 	/* XZ_PREBOOT may be defined only via decompress_unxz.c. */
 #	ifndef XZ_PREBOOT
 #		include <linux/slab.h>
 #		include <linux/vmalloc.h>
 #		include <linux/string.h>
-#		define memeq(a, b, size) (memcmp(a, b, size) == 0)
-#		define memzero(buf, size) memset(buf, 0, size)
-#	endif
-#	include <asm/byteorder.h>
-#	include <asm/unaligned.h>
-#	define get_le32(p) le32_to_cpup((const uint32_t *)(p))
-	/* XZ_IGNORE_KCONFIG may be defined only via decompress_unxz.c. */
-#	ifndef XZ_IGNORE_KCONFIG
 #		ifdef CONFIG_XZ_DEC_X86
 #			define XZ_DEC_X86
 #		endif
@@ -42,8 +37,10 @@
 #		ifdef CONFIG_XZ_DEC_SPARC
 #			define XZ_DEC_SPARC
 #		endif
+#		define memeq(a, b, size) (memcmp(a, b, size) == 0)
+#		define memzero(buf, size) memset(buf, 0, size)
 #	endif
-#	include <linux/xz.h>
+#	define get_le32(p) le32_to_cpup((const uint32_t *)(p))
 #else
 	/*
 	 * For userspace builds, use a separate header to define the required
