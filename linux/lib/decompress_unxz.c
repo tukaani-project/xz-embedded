@@ -283,12 +283,12 @@ STATIC int INIT unxz(/*const*/ unsigned char *in, int in_size,
 		ret = xz_dec_run(s, &b);
 	} else {
 		b.out_size = XZ_IOBUF_SIZE;
-		b.out = kmalloc(XZ_IOBUF_SIZE, GFP_KERNEL);
+		b.out = malloc(XZ_IOBUF_SIZE);
 		if (b.out == NULL)
 			goto error_alloc_out;
 
 		if (fill != NULL) {
-			in = kmalloc(XZ_IOBUF_SIZE, GFP_KERNEL);
+			in = malloc(XZ_IOBUF_SIZE);
 			if (in == NULL)
 				goto error_alloc_in;
 
@@ -332,9 +332,9 @@ STATIC int INIT unxz(/*const*/ unsigned char *in, int in_size,
 		} while (ret == XZ_OK);
 
 		if (fill != NULL)
-			kfree(in);
+			free(in);
 
-		kfree(b.out);
+		free(b.out);
 	}
 
 	if (in_used != NULL)
@@ -377,7 +377,7 @@ STATIC int INIT unxz(/*const*/ unsigned char *in, int in_size,
 	return -1;
 
 error_alloc_in:
-	kfree(b.out);
+	free(b.out);
 
 error_alloc_out:
 	xz_dec_end(s);
