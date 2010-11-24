@@ -257,7 +257,7 @@ STATIC int INIT unxz(/*const*/ unsigned char *in, int in_size,
 	struct xz_dec *s;
 	enum xz_ret ret;
 
-#ifdef XZ_PREBOOT
+#if XZ_INTERNAL_CRC32
 	xz_crc32_init();
 #endif
 
