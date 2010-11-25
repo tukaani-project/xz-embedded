@@ -56,20 +56,6 @@
 #	endif
 #endif
 
-/*
- * Some functions are marked to never be inlined to reduce stack usage.
- * If you don't care about stack usage, you may want to modify this so
- * that noinline_for_stack is #defined to be empty even when using GCC.
- * Doing so may save a few bytes in binary size.
- */
-#ifndef noinline_for_stack
-#	ifdef __GNUC__
-#		define noinline_for_stack __attribute__((__noinline__))
-#	else
-#		define noinline_for_stack
-#	endif
-#endif
-
 /* Inline functions to access unaligned unsigned 32-bit integers */
 #ifndef get_unaligned_le32
 static inline uint32_t get_unaligned_le32(const uint8_t *buf)
