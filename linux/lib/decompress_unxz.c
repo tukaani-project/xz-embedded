@@ -319,7 +319,8 @@ STATIC int INIT unxz(unsigned char *in, int in_size,
 
 			ret = xz_dec_run(s, &b);
 
-			if (b.out_pos == b.out_size || ret != XZ_OK) {
+			if (b.out_pos == b.out_size
+					|| (ret != XZ_OK && b.out_pos > 0)) {
 				/*
 				 * Setting ret here may hide an error
 				 * returned by xz_dec_run(), but probably
