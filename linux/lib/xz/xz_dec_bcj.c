@@ -85,8 +85,8 @@ static inline int bcj_x86_test_msbyte(uint8_t b)
 	return b == 0x00 || b == 0xFF;
 }
 
-static noinline_for_stack size_t bcj_x86(
-		struct xz_dec_bcj *s, uint8_t *buf, size_t size)
+static noinline_for_stack size_t
+bcj_x86(struct xz_dec_bcj *s, uint8_t *buf, size_t size)
 {
 	static const bool mask_to_allowed_status[8]
 		= { true, true, true, false, true, false, false, false };
@@ -158,8 +158,8 @@ static noinline_for_stack size_t bcj_x86(
 #endif
 
 #ifdef XZ_DEC_POWERPC
-static noinline_for_stack size_t bcj_powerpc(
-		struct xz_dec_bcj *s, uint8_t *buf, size_t size)
+static noinline_for_stack size_t
+bcj_powerpc(struct xz_dec_bcj *s, uint8_t *buf, size_t size)
 {
 	size_t i;
 	uint32_t instr;
@@ -180,8 +180,8 @@ static noinline_for_stack size_t bcj_powerpc(
 #endif
 
 #ifdef XZ_DEC_IA64
-static noinline_for_stack size_t bcj_ia64(
-		struct xz_dec_bcj *s, uint8_t *buf, size_t size)
+static noinline_for_stack size_t
+bcj_ia64(struct xz_dec_bcj *s, uint8_t *buf, size_t size)
 {
 	static const uint8_t branch_table[32] = {
 		0, 0, 0, 0, 0, 0, 0, 0,
@@ -265,8 +265,8 @@ static noinline_for_stack size_t bcj_ia64(
 #endif
 
 #ifdef XZ_DEC_ARM
-static noinline_for_stack size_t bcj_arm(
-		struct xz_dec_bcj *s, uint8_t *buf, size_t size)
+static noinline_for_stack size_t
+bcj_arm(struct xz_dec_bcj *s, uint8_t *buf, size_t size)
 {
 	size_t i;
 	uint32_t addr;
@@ -289,8 +289,8 @@ static noinline_for_stack size_t bcj_arm(
 #endif
 
 #ifdef XZ_DEC_ARMTHUMB
-static noinline_for_stack size_t bcj_armthumb(
-		struct xz_dec_bcj *s, uint8_t *buf, size_t size)
+static noinline_for_stack size_t
+bcj_armthumb(struct xz_dec_bcj *s, uint8_t *buf, size_t size)
 {
 	size_t i;
 	uint32_t addr;
@@ -318,8 +318,8 @@ static noinline_for_stack size_t bcj_armthumb(
 #endif
 
 #ifdef XZ_DEC_SPARC
-static noinline_for_stack size_t bcj_sparc(
-		struct xz_dec_bcj *s, uint8_t *buf, size_t size)
+static noinline_for_stack size_t
+bcj_sparc(struct xz_dec_bcj *s, uint8_t *buf, size_t size)
 {
 	size_t i;
 	uint32_t instr;
