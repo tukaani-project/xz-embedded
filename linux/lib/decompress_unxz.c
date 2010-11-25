@@ -249,10 +249,10 @@ void *memmove(void *dest, const void *src, size_t size)
  * fill() and flush() won't be used.
  */
 STATIC int INIT unxz(unsigned char *in, int in_size,
-		int (*fill)(void *dest, unsigned int size),
-		int (*flush)(void *src, unsigned int size),
-		unsigned char *out, int *in_used,
-		void (*error)(char *x))
+		     int (*fill)(void *dest, unsigned int size),
+		     int (*flush)(void *src, unsigned int size),
+		     unsigned char *out, int *in_used,
+		     void (*error)(char *x))
 {
 	struct xz_buf b;
 	struct xz_dec *s;

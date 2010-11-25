@@ -371,8 +371,8 @@ static bool dict_repeat(struct dictionary *dict, uint32_t *len, uint32_t dist)
 }
 
 /* Copy uncompressed data as is from input to dictionary and output buffers. */
-static void dict_uncompressed(
-		struct dictionary *dict, struct xz_buf *b, uint32_t *left)
+static void dict_uncompressed(struct dictionary *dict, struct xz_buf *b,
+			      uint32_t *left)
 {
 	size_t copy_size;
 
@@ -517,8 +517,8 @@ static __always_inline int rc_bit(struct rc_dec *rc, uint16_t *prob)
 }
 
 /* Decode a bittree starting from the most significant bit. */
-static __always_inline uint32_t rc_bittree(
-		struct rc_dec *rc, uint16_t *probs, uint32_t limit)
+static __always_inline uint32_t rc_bittree(struct rc_dec *rc,
+					   uint16_t *probs, uint32_t limit)
 {
 	uint32_t symbol = 1;
 
@@ -534,7 +534,8 @@ static __always_inline uint32_t rc_bittree(
 
 /* Decode a bittree starting from the least significant bit. */
 static __always_inline void rc_bittree_reverse(struct rc_dec *rc,
-		uint16_t *probs, uint32_t *dest, uint32_t limit)
+					       uint16_t *probs,
+					       uint32_t *dest, uint32_t limit)
 {
 	uint32_t symbol = 1;
 	uint32_t i = 0;
@@ -550,8 +551,7 @@ static __always_inline void rc_bittree_reverse(struct rc_dec *rc,
 }
 
 /* Decode direct bits (fixed fifty-fifty probability) */
-static inline void rc_direct(
-		struct rc_dec *rc, uint32_t *dest, uint32_t limit)
+static inline void rc_direct(struct rc_dec *rc, uint32_t *dest, uint32_t limit)
 {
 	uint32_t mask;
 
@@ -618,7 +618,7 @@ static void lzma_literal(struct xz_dec_lzma2 *s)
 
 /* Decode the length of the match into s->lzma.len. */
 static void lzma_len(struct xz_dec_lzma2 *s, struct lzma_len_dec *l,
-		uint32_t pos_state)
+		     uint32_t pos_state)
 {
 	uint16_t *probs;
 	uint32_t limit;
@@ -929,8 +929,8 @@ static bool lzma2_lzma(struct xz_dec_lzma2 *s, struct xz_buf *b)
  * Take care of the LZMA2 control layer, and forward the job of actual LZMA
  * decoding or copying of uncompressed chunks to other functions.
  */
-XZ_EXTERN enum xz_ret xz_dec_lzma2_run(
-		struct xz_dec_lzma2 *s, struct xz_buf *b)
+XZ_EXTERN enum xz_ret xz_dec_lzma2_run(struct xz_dec_lzma2 *s,
+				       struct xz_buf *b)
 {
 	uint32_t tmp;
 
@@ -1102,8 +1102,8 @@ XZ_EXTERN enum xz_ret xz_dec_lzma2_run(
 	return XZ_OK;
 }
 
-XZ_EXTERN struct xz_dec_lzma2 *xz_dec_lzma2_create(
-		enum xz_mode mode, uint32_t dict_max)
+XZ_EXTERN struct xz_dec_lzma2 *xz_dec_lzma2_create(enum xz_mode mode,
+						   uint32_t dict_max)
 {
 	struct xz_dec_lzma2 *s = kmalloc(sizeof(*s), GFP_KERNEL);
 	if (s == NULL)
@@ -1126,8 +1126,7 @@ XZ_EXTERN struct xz_dec_lzma2 *xz_dec_lzma2_create(
 	return s;
 }
 
-XZ_EXTERN enum xz_ret xz_dec_lzma2_reset(
-		struct xz_dec_lzma2 *s, uint8_t props)
+XZ_EXTERN enum xz_ret xz_dec_lzma2_reset(struct xz_dec_lzma2 *s, uint8_t props)
 {
 	/* This limits dictionary size to 3 GiB to keep parsing simpler. */
 	if (props > 39)

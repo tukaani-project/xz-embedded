@@ -172,8 +172,8 @@ static bool fill_temp(struct xz_dec *s, struct xz_buf *b)
 }
 
 /* Decode a variable-length integer (little-endian base-128 encoding) */
-static enum xz_ret dec_vli(struct xz_dec *s,
-		const uint8_t *in, size_t *in_pos, size_t in_size)
+static enum xz_ret dec_vli(struct xz_dec *s, const uint8_t *in,
+			   size_t *in_pos, size_t in_size)
 {
 	uint8_t byte;
 

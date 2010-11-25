@@ -343,7 +343,7 @@ static size_t bcj_sparc(struct xz_dec_bcj *s, uint8_t *buf, size_t size)
  * avoid pointers to static data (at least on x86).
  */
 static void bcj_apply(struct xz_dec_bcj *s,
-		uint8_t *buf, size_t *pos, size_t size)
+		      uint8_t *buf, size_t *pos, size_t size)
 {
 	size_t filtered;
 
@@ -415,7 +415,8 @@ static void bcj_flush(struct xz_dec_bcj *s, struct xz_buf *b)
  * some buffering.
  */
 XZ_EXTERN enum xz_ret xz_dec_bcj_run(struct xz_dec_bcj *s,
-		struct xz_dec_lzma2 *lzma2, struct xz_buf *b)
+				     struct xz_dec_lzma2 *lzma2,
+				     struct xz_buf *b)
 {
 	size_t out_start;
 
@@ -519,8 +520,7 @@ XZ_EXTERN struct xz_dec_bcj *xz_dec_bcj_create(bool single_call)
 	return s;
 }
 
-XZ_EXTERN enum xz_ret xz_dec_bcj_reset(
-		struct xz_dec_bcj *s, uint8_t id)
+XZ_EXTERN enum xz_ret xz_dec_bcj_reset(struct xz_dec_bcj *s, uint8_t id)
 {
 	switch (id) {
 #ifdef XZ_DEC_X86
