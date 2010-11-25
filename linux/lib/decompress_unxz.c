@@ -1,5 +1,5 @@
 /*
- * XZ decoder as a single file for uncompressing the kernel and initramfs
+ * Single-file XZ decompressor for decompressing the kernel and initramfs
  *
  * Author: Lasse Collin <lasse.collin@tukaani.org>
  *
@@ -193,6 +193,7 @@ static void memzero(void *buf, size_t size)
 {
 	uint8_t *b = buf;
 	uint8_t *e = b + size;
+
 	while (b != e)
 		*b++ = '\0';
 }
