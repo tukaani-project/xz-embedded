@@ -405,7 +405,6 @@ static void dict_uncompressed(struct dictionary *dict, struct xz_buf *b,
 
 		b->out_pos += copy_size;
 		b->in_pos += copy_size;
-
 	}
 }
 
