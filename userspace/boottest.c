@@ -61,18 +61,33 @@ static void test_cb_to_cb(void)
 	fprintf(stderr, "ret = %d\n", ret);
 }
 
+/*
+ * Not used by Linux <= 2.6.37-rc4 and newer probably won't use it either,
+ * but this kind of use case is still required to be supported by the API.
+ */
+static void test_cb_to_buf(void)
+{
+	int in_used;
+	int ret;
+	ret = decompress(in, 0, &fill, NULL, out, &in_used, &error);
+	/* fwrite(out, 1, FIXME, stdout); */
+	fprintf(stderr, "ret = %d; in_used = %d\n", ret, in_used);
+}
+
 int main(int argc, char **argv)
 {
 	if (argc != 2)
-		fprintf(stderr, "Usage: %s [bb|bc|cc]\n", argv[0]);
+		fprintf(stderr, "Usage: %s [bb|bc|cc|cb]\n", argv[0]);
 	else if (strcmp(argv[1], "bb") == 0)
 		test_buf_to_buf();
 	else if (strcmp(argv[1], "bc") == 0)
 		test_buf_to_cb();
 	else if (strcmp(argv[1], "cc") == 0)
 		test_cb_to_cb();
+	else if (strcmp(argv[1], "cb") == 0)
+		test_cb_to_buf();
 	else
-		fprintf(stderr, "Usage: %s [bb|bc|cc]\n", argv[0]);
+		fprintf(stderr, "Usage: %s [bb|bc|cc|cb]\n", argv[0]);
 
 	return 0;
 }

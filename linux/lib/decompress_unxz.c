@@ -257,12 +257,16 @@ STATIC int INIT unxz(unsigned char *in, int in_size,
 	struct xz_buf b;
 	struct xz_dec *s;
 	enum xz_ret ret;
+	bool must_free_in = false;
 
 #if XZ_INTERNAL_CRC32
 	xz_crc32_init();
 #endif
 
-	if (in != NULL && out != NULL)
+	if (in_used != NULL)
+		*in_used = 0;
+
+	if (fill == NULL && flush == NULL)
 		s = xz_dec_init(XZ_SINGLE, 0);
 	else
 		s = xz_dec_init(XZ_DYNALLOC, (uint32_t)-1);
@@ -270,32 +274,31 @@ STATIC int INIT unxz(unsigned char *in, int in_size,
 	if (s == NULL)
 		goto error_alloc_state;
 
-	b.in = in;
-	b.in_pos = 0;
-	b.in_size = in_size;
-	b.out_pos = 0;
-
-	if (in_used != NULL)
-		*in_used = 0;
-
-	if (fill == NULL && flush == NULL) {
+	if (flush == NULL) {
 		b.out = out;
 		b.out_size = (size_t)-1;
-		ret = xz_dec_run(s, &b);
 	} else {
 		b.out_size = XZ_IOBUF_SIZE;
 		b.out = malloc(XZ_IOBUF_SIZE);
 		if (b.out == NULL)
 			goto error_alloc_out;
+	}
 
-		if (fill != NULL) {
-			in = malloc(XZ_IOBUF_SIZE);
-			if (in == NULL)
-				goto error_alloc_in;
+	if (in == NULL) {
+		must_free_in = true;
+		in = malloc(XZ_IOBUF_SIZE);
+		if (in == NULL)
+			goto error_alloc_in;
+	}
 
-			b.in = in;
-		}
+	b.in = in;
+	b.in_pos = 0;
+	b.in_size = in_size;
+	b.out_pos = 0;
 
+	if (fill == NULL && flush == NULL) {
+		ret = xz_dec_run(s, &b);
+	} else {
 		do {
 			if (b.in_pos == b.in_size && fill != NULL) {
 				if (in_used != NULL)
@@ -319,8 +322,8 @@ STATIC int INIT unxz(unsigned char *in, int in_size,
 
 			ret = xz_dec_run(s, &b);
 
-			if (b.out_pos == b.out_size
-					|| (ret != XZ_OK && b.out_pos > 0)) {
+			if (flush != NULL && (b.out_pos == b.out_size
+					|| (ret != XZ_OK && b.out_pos > 0))) {
 				/*
 				 * Setting ret here may hide an error
 				 * returned by xz_dec_run(), but probably
@@ -333,10 +336,11 @@ STATIC int INIT unxz(unsigned char *in, int in_size,
 			}
 		} while (ret == XZ_OK);
 
-		if (fill != NULL)
+		if (must_free_in)
 			free(in);
 
-		free(b.out);
+		if (flush != NULL)
+			free(b.out);
 	}
 
 	if (in_used != NULL)
@@ -375,7 +379,8 @@ STATIC int INIT unxz(unsigned char *in, int in_size,
 	return -1;
 
 error_alloc_in:
-	free(b.out);
+	if (flush != NULL)
+		free(b.out);
 
 error_alloc_out:
 	xz_dec_end(s);
