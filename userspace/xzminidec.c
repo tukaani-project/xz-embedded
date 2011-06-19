@@ -8,10 +8,10 @@
  */
 
 /*
- * This is really limited: The dictionary has to be preallocated, only CRC32
- * is supported as the integrity check, and decoding of concatenated streams
- * is not supported. Thus, you may want to look at xzdec from XZ Utils if
- * a few KiB bigger tool is not a problem.
+ * This is really limited: Not all filters from .xz format are supported,
+ * only CRC32 is supported as the integrity check, and decoding of
+ * concatenated .xz streams is not supported. Thus, you may want to look
+ * at xzdec from XZ Utils if a few KiB bigger tool is not a problem.
  */
 
 #include <stdbool.h>
