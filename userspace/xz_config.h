@@ -10,6 +10,9 @@
 #ifndef XZ_CONFIG_H
 #define XZ_CONFIG_H
 
+/* Uncomment to enable CRC64 support. */
+/* #define XZ_USE_CRC64 */
+
 /* Uncomment as needed to enable BCJ filter decoders. */
 /* #define XZ_DEC_X86 */
 /* #define XZ_DEC_POWERPC */
