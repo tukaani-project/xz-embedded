@@ -650,6 +650,8 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 
 			s->sequence = SEQ_BLOCK_PADDING;
 
+		/* Fall through */
+
 		case SEQ_BLOCK_PADDING:
 			/*
 			 * Size of Compressed Data + Block Padding
@@ -698,6 +700,8 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 				return ret;
 
 			s->sequence = SEQ_INDEX_PADDING;
+
+		/* Fall through */
 
 		case SEQ_INDEX_PADDING:
 			while ((s->index.size + (b->in_pos - s->in_start))
