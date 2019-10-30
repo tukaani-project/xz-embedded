@@ -10,3 +10,4 @@ modules.order
 xzminidec
 buftest
 boottest
+bytetest
