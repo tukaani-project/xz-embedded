@@ -61,6 +61,12 @@ int main(int argc, char **argv)
 	while (true) {
 		if (b.in_pos == b.in_size) {
 			b.in_size = fread(in, 1, sizeof(in), stdin);
+
+			if (ferror(stdin)) {
+				msg = "Read error\n";
+				goto error;
+			}
+
 			b.in_pos = 0;
 		}
 
