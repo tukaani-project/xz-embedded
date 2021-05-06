@@ -70,7 +70,13 @@ int main(int argc, char **argv)
 			b.in_pos = 0;
 		}
 
-		ret = xz_dec_run(s, &b);
+		/*
+		 * There are a few ways to set the "finish" (the third)
+		 * argument. We could use feof(stdin) but testing in_size
+		 * is fine too and may also work in applications that don't
+		 * use FILEs.
+		 */
+		ret = xz_dec_catrun(s, &b, b.in_size == 0);
 
 		if (b.out_pos == sizeof(out)) {
 			if (fwrite(out, 1, b.out_pos, stdout) != b.out_pos) {

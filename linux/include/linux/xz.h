@@ -198,7 +198,7 @@ struct xz_dec;
 XZ_EXTERN struct xz_dec *xz_dec_init(enum xz_mode mode, uint32_t dict_max);
 
 /**
- * xz_dec_run() - Run the XZ decoder
+ * xz_dec_run() - Run the XZ decoder for a single XZ stream
  * @s:          Decoder state allocated using xz_dec_init()
  * @b:          Input and output buffers
  *
@@ -214,8 +214,50 @@ XZ_EXTERN struct xz_dec *xz_dec_init(enum xz_mode mode, uint32_t dict_max);
  * cannot give the single-call decoder a too small buffer and then expect to
  * get that amount valid data from the beginning of the stream. You must use
  * the multi-call decoder if you don't want to uncompress the whole stream.
+ *
+ * Use xz_dec_run() when XZ data is stored inside some other file format.
+ * The decoding will stop after one XZ stream has been decompresed. To
+ * decompress regular .xz files which might have multiple concatenated
+ * streams, use xz_dec_catrun() instead.
  */
 XZ_EXTERN enum xz_ret xz_dec_run(struct xz_dec *s, struct xz_buf *b);
+
+/**
+ * xz_dec_catrun() - Run the XZ decoder with support for concatenated streams
+ * @s:          Decoder state allocated using xz_dec_init()
+ * @b:          Input and output buffers
+ * @finish:     This is an int instead of bool to avoid requiring stdbool.h.
+ *              As long as more input might be coming, finish must be false.
+ *              When the caller knows that it has provided all the input to
+ *              the decoder (some possibly still in b->in), it must set finish
+ *              to true. Only when finish is true can this function return
+ *              XZ_STREAM_END to indicate successful decompression of the
+ *              file. In single-call mode (XZ_SINGLE) finish is assumed to
+ *              always be true; the caller-provided value is ignored.
+ *
+ * This is like xz_dec_run() except that this makes it easy to decode .xz
+ * files with multiple streams (multiple .xz files concatenated as is).
+ * The rarely-used Stream Padding feature is supported too, that is, there
+ * can be null bytes after or between the streams. The number of null bytes
+ * must be a multiple of four.
+ *
+ * When finish is false and b->in_pos == b->in_size, it is possible that
+ * XZ_BUF_ERROR isn't returned even when no progress is possible (XZ_OK is
+ * returned instead). This shouldn't matter because in this situation a
+ * reasonable caller will attempt to provide more input or set finish to
+ * true for the next xz_dec_catrun() call anyway.
+ *
+ * For any struct xz_dec that has been initialized for multi-call mode:
+ * Once decoding has been started with xz_dec_run() or xz_dec_catrun(),
+ * the same function must be used until xz_dec_reset() or xz_dec_end().
+ * Switching between the two decoding functions without resetting results
+ * in undefined behavior.
+ *
+ * xz_dec_catrun() is only available if XZ_DEC_CONCATENATED was defined
+ * at compile time.
+ */
+XZ_EXTERN enum xz_ret xz_dec_catrun(struct xz_dec *s, struct xz_buf *b,
+				    int finish);
 
 /**
  * xz_dec_reset() - Reset an already allocated decoder state
