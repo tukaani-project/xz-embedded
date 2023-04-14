@@ -35,9 +35,10 @@ Compiling the Linux kernel module
         make -C /path/to/kernel/source \
                 KCPPFLAGS=-I"$(pwd)/../../include" M="$(pwd)" \
                 CONFIG_XZ_DEC=m CONFIG_XZ_DEC_TEST=m CONFIG_XZ_DEC_BCJ=y \
-                CONFIG_XZ_DEC_X86=y CONFIG_XZ_DEC_POWERPC=y \
-                CONFIG_XZ_DEC_IA64=y CONFIG_XZ_DEC_ARM=y \
-                CONFIG_XZ_DEC_ARMTHUMB=y CONFIG_XZ_DEC_SPARC=y
+                CONFIG_XZ_DEC_X86=y CONFIG_XZ_DEC_ARM=y \
+                CONFIG_XZ_DEC_ARMTHUMB=y CONFIG_XZ_DEC_ARM64=y \
+                CONFIG_XZ_DEC_POWERPC=y CONFIG_XZ_DEC_IA64=y \
+                CONFIG_XZ_DEC_SPARC=y
 
     If you want only one or a few of the BCJ filters, omit the appropriate
     variables. CONFIG_XZ_DEC_BCJ=y is always required to build the support
