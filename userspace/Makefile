@@ -11,8 +11,8 @@
 # the code is also C99/C11 compatible. With clang you may wish to omit
 # either -std=gnu89 or -pedantic as having both gives quite a few warnings.
 CC = gcc -std=gnu89
-BCJ_CPPFLAGS = -DXZ_DEC_X86 -DXZ_DEC_POWERPC -DXZ_DEC_IA64 \
-		-DXZ_DEC_ARM -DXZ_DEC_ARMTHUMB -DXZ_DEC_SPARC
+BCJ_CPPFLAGS = -DXZ_DEC_X86 -DXZ_DEC_ARM -DXZ_DEC_ARMTHUMB -DXZ_DEC_ARM64 \
+		-DXZ_DEC_POWERPC -DXZ_DEC_IA64 -DXZ_DEC_SPARC
 CPPFLAGS = -DXZ_USE_CRC64 -DXZ_DEC_ANY_CHECK -DXZ_DEC_CONCATENATED
 CFLAGS = -ggdb3 -O2 -pedantic -Wall -Wextra -Wno-long-long
 RM = rm -f
