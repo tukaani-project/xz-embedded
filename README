@@ -90,7 +90,7 @@ Supporting concatenated .xz files
     Regular .xz files can be concatenated as is and the xz command line
     tool will decompress all streams from a concatenated file (a few
     other popular formats and tools support this too). This kind of .xz
-    files aren't as uncommon as one might think because pxz, an early
+    files are more common than one might think because pxz, an early
     threaded XZ compressor, created this kind of .xz files.
 
     The xz_dec_run() function will stop after decompressing one stream.
@@ -138,7 +138,7 @@ Integrity check support
 
 BCJ filter support
 
-    If you want support for one or more BCJ filters, you need to copy also
+    If you want support for one or more BCJ filters, you need to copy
     linux/lib/xz/xz_dec_bcj.c into your application, and use appropriate
     #defines in xz_config.h or in compiler flags. You don't need these
     #defines in the code that just uses XZ Embedded via xz.h, but having
@@ -148,28 +148,24 @@ BCJ filter support
         XZ_DEC_X86          x86-32 or x86-64    Little endian only
         XZ_DEC_POWERPC      PowerPC             Big endian only
         XZ_DEC_IA64         Itanium (IA-64)     Big or little endian
-        XZ_DEC_ARM          ARM                 Little endian only
-        XZ_DEC_ARMTHUMB     ARM-Thumb           Little endian only
+        XZ_DEC_ARM          ARM                 Little endian instructions
+        XZ_DEC_ARMTHUMB     ARM-Thumb           Big or little endian
+        XZ_DEC_ARM64        ARM64               Big or little endian
         XZ_DEC_SPARC        SPARC               Big or little endian
 
     While some architectures are (partially) bi-endian, the endianness
     setting doesn't change the endianness of the instructions on all
-    architectures. That's why Itanium and SPARC filters work for both big
-    and little endian executables (Itanium has little endian instructions
-    and SPARC has big endian instructions).
-
-    There currently is no filter for little endian PowerPC or big endian
-    ARM or ARM-Thumb. Implementing filters for them can be considered if
-    there is a need for such filters in real-world applications.
+    architectures. That's why many filters work for both big and little
+    endian executables (Itanium and ARM based architectures have little
+    endian instructions and SPARC has big endian instructions).
 
 Notes about shared libraries
 
-    If you are including XZ Embedded into a shared library, you very
-    probably should rename the xz_* functions to prevent symbol
-    conflicts in case your library is linked against some other library
-    or application that also has XZ Embedded in it (which may even be
-    a different version of XZ Embedded). TODO: Provide an easy way
-    to do this.
+    If you are including XZ Embedded into a shared library, you should
+    rename the xz_* functions to prevent symbol conflicts in case your
+    library is linked against some other library or application that
+    also has XZ Embedded in it (which may even be a different version
+    of XZ Embedded).
 
     Please don't create a shared library of XZ Embedded itself unless
     it is fine to rebuild everything depending on that shared library
