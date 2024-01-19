@@ -110,10 +110,10 @@ Reporting bugs
     at upstream. See <https://xz.tukaani.org/xz-embedded/> to get the
     latest code.
 
-    Report bugs to <lasse.collin@tukaani.org> or visit #tukaani on
-    Freenode and talk to Larhzu. I don't actively read LKML or other
-    kernel-related mailing lists, so if there's something I should know,
-    you should email to me personally or use IRC.
+    Report bugs to <xz@tukaani.org> or visit #tukaani on
+    Freenode and talk to the maintainers. We don't actively read LKML or
+    other kernel-related mailing lists, so if there's something we should
+    know, please use email or IRC.
 
     Don't bother Igor Pavlov with questions about the XZ implementation
     in the kernel or about XZ Utils. While these two implementations
