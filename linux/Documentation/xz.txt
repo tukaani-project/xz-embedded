@@ -111,7 +111,7 @@ Reporting bugs
     latest code.
 
     Report bugs to <xz@tukaani.org> or visit #tukaani on
-    Freenode and talk to the maintainers. We don't actively read LKML or
+    Libera Chat and talk to the maintainers. We don't actively read LKML or
     other kernel-related mailing lists, so if there's something we should
     know, please use email or IRC.
 
