@@ -25,18 +25,14 @@
 /* #define XZ_DEC_SPARC */
 
 /*
- * MSVC doesn't support modern C but XZ Embedded is mostly C89
- * so these are enough.
+ * Visual Studio 2013 update 2 supports only __inline, not inline.
+ * MSVC v19.0 / VS 2015 and newer support both.
  */
-#ifdef _MSC_VER
-typedef unsigned char bool;
-#	define true 1
-#	define false 0
+#if defined(_MSC_VER) && _MSC_VER < 1900 && !defined(inline)
 #	define inline __inline
-#else
-#	include <stdbool.h>
 #endif
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
