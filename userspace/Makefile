@@ -2,14 +2,17 @@
 #
 # Author: Lasse Collin <lasse.collin@tukaani.org>
 
-# gcc -std=gnu89 is used because Linux uses it. It is fine to omit it as
-# the code is also C99/C11 compatible. With clang you may wish to omit
-# either -std=gnu89 or -pedantic as having both gives quite a few warnings.
-CC = gcc -std=gnu89
+# In 2022, Linux finally moved forward from -std=gnu89 and switched
+# to -std=gnu11. In practice quite a few C99/C11 features were used
+# for decades that were extensions in GNU-C89.
+#
+# Use the option -Wdeclaration-after-statement for historical reasons
+# for now.
+CC = gcc -std=gnu11
 BCJ_CPPFLAGS = -DXZ_DEC_X86 -DXZ_DEC_ARM -DXZ_DEC_ARMTHUMB -DXZ_DEC_ARM64 \
 		-DXZ_DEC_POWERPC -DXZ_DEC_IA64 -DXZ_DEC_SPARC
 CPPFLAGS = -DXZ_USE_CRC64 -DXZ_DEC_ANY_CHECK -DXZ_DEC_CONCATENATED
-CFLAGS = -ggdb3 -O2 -pedantic -Wall -Wextra -Wno-long-long
+CFLAGS = -ggdb3 -O2 -pedantic -Wall -Wextra -Wdeclaration-after-statement
 RM = rm -f
 VPATH = ../linux/include/linux ../linux/lib/xz
 COMMON_SRCS = xz_crc32.c xz_crc64.c xz_dec_stream.c xz_dec_lzma2.c xz_dec_bcj.c
