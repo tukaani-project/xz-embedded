@@ -1,11 +1,6 @@
-#
-# Makefile
+# SPDX-License-Identifier: 0BSD
 #
 # Author: Lasse Collin <lasse.collin@tukaani.org>
-#
-# This file has been put into the public domain.
-# You can do whatever you want with this file.
-#
 
 # gcc -std=gnu89 is used because Linux uses it. It is fine to omit it as
 # the code is also C99/C11 compatible. With clang you may wish to omit
