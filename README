@@ -9,56 +9,45 @@ XZ Embedded
     be easily used in other environments too, including regular userspace
     applications. See userspace/xzminidec.c for an example program.
 
+        NOTE: The version of XZ Embedded in the Linux kernel lacks a few
+        build-time-selectable optional features that are present in the
+        upstream XZ Embedded project: support for concatated .xz files,
+        CRC64, and ignoring unsupported check. These aren't in Linux
+        because they don't seem useful there but they would add to the
+        code size.
+
     This README contains information that is useful only when the copy
     of XZ Embedded isn't part of the Linux kernel tree. You should also
-    read linux/Documentation/xz.txt even if you aren't using XZ Embedded
-    as part of Linux; information in that file is not repeated in this
-    README.
+    read linux/Documentation/staging/xz.rst even if you aren't using
+    XZ Embedded as part of Linux; information in that file is not
+    repeated in this README.
 
-Compiling the Linux kernel module
+Conformance to the .xz file format specification
 
-    The xz_dec module depends on crc32 module, so make sure that you have
-    it enabled (CONFIG_CRC32).
+    As of the .xz file format specification version 1.2.0, this
+    decompressor implementation has the following limitations:
 
-    Building the xz_dec and xz_dec_test modules without support for BCJ
-    filters:
+      - SHA-256 isn't supported. It can be ignored as an unsupported
+        checked type if that feature is enabled at build time.
 
-        cd linux/lib/xz
-        make -C /path/to/kernel/source \
-                KCPPFLAGS=-I"$(pwd)/../../include" M="$(pwd)" \
-                CONFIG_XZ_DEC=m CONFIG_XZ_DEC_TEST=m
+      - Delta filter is not included.
 
-    Building the xz_dec and xz_dec_test modules with support for BCJ
-    filters:
+      - BCJ filters don't support non-default start offset.
 
-        cd linux/lib/xz
-        make -C /path/to/kernel/source \
-                KCPPFLAGS=-I"$(pwd)/../../include" M="$(pwd)" \
-                CONFIG_XZ_DEC=m CONFIG_XZ_DEC_TEST=m CONFIG_XZ_DEC_BCJ=y \
-                CONFIG_XZ_DEC_X86=y CONFIG_XZ_DEC_ARM=y \
-                CONFIG_XZ_DEC_ARMTHUMB=y CONFIG_XZ_DEC_ARM64=y \
-                CONFIG_XZ_DEC_POWERPC=y CONFIG_XZ_DEC_IA64=y \
-                CONFIG_XZ_DEC_SPARC=y CONFIG_XZ_DEC_RISCV=y
+      - LZMA2 supports at most 3 GiB dictionary.
 
-    If you want only one or a few of the BCJ filters, omit the appropriate
-    variables. CONFIG_XZ_DEC_BCJ=y is always required to build the support
-    code shared between all BCJ filters.
-
-    Most people don't need the xz_dec_test module. You can skip building
-    it by omitting CONFIG_XZ_DEC_TEST=m from the make command line.
+    There are a couple of corner cases where things have been simplified
+    at expense of detecting errors as early as possible. These should not
+    matter in practice at all since they don't cause security issues. But
+    it is good to know this if testing the code with the test files from
+    XZ Utils.
 
 Compiler requirements
 
-    XZ Embedded should compile as either GNU-C89 (used in the Linux
-    kernel) or with any C99 compiler. Getting the code to compile with
-    non-GNU C89 compiler or a C++ compiler should be quite easy as
-    long as there is a data type for unsigned 64-bit integer (or the
-    code is modified not to support large files, which needs some more
-    care than just using 32-bit integer instead of 64-bit).
-
-    If you use GCC, try to use a recent version. For example, on x86-32,
-    xz_dec_lzma2.c compiled with GCC 3.3.6 is 15-25 % slower than when
-    compiled with GCC 4.3.3.
+    XZ Embedded should compile with any C99 or C11 compiler. The code
+    should also be GNU-C89 compatible still. GNU-C89 was used in the
+    Linux kernel until 2022. GNU-C89 support likely will be dropped
+    at some point.
 
 Embedding into userspace applications
 
@@ -173,4 +162,14 @@ Notes about shared libraries
     everytime you upgrade to a newer version of XZ Embedded. There are
     no API or ABI stability guarantees between different versions of
     XZ Embedded.
+
+Contact information
+
+    If you have questions, bug reports, patches etc. related to
+    XZ Embedded, the project maintainers Lasse Collin and Jia Tan
+    can be reached via email, IRC, or GitHub:
+
+      - Email: xz@tukaani.org
+      - IRC: #tukaani on Libera Chat
+      - GitHub: https://github.com/tukaani-project/xz-embedded
 
