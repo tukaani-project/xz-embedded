@@ -51,6 +51,16 @@
 #endif
 #define min_t(type, x, y) min(x, y)
 
+#ifndef fallthrough
+#	if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202000
+#		define fallthrough [[fallthrough]]
+#	elif defined(__GNUC__) && __GNUC__ >= 7
+#		define fallthrough __attribute__((__fallthrough__))
+#	else
+#		define fallthrough do {} while (0)
+#	endif
+#endif
+
 /*
  * Some functions have been marked with __always_inline to keep the
  * performance reasonable even when the compiler is optimizing for

@@ -604,7 +604,7 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 			if (ret != XZ_OK)
 				return ret;
 
-		/* Fall through */
+			fallthrough;
 
 		case SEQ_BLOCK_START:
 			/* We need one byte of input to continue. */
@@ -629,7 +629,7 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 			s->temp.pos = 0;
 			s->sequence = SEQ_BLOCK_HEADER;
 
-		/* Fall through */
+			fallthrough;
 
 		case SEQ_BLOCK_HEADER:
 			if (!fill_temp(s, b))
@@ -641,7 +641,7 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 
 			s->sequence = SEQ_BLOCK_UNCOMPRESS;
 
-		/* Fall through */
+			fallthrough;
 
 		case SEQ_BLOCK_UNCOMPRESS:
 			ret = dec_block(s, b);
@@ -650,7 +650,7 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 
 			s->sequence = SEQ_BLOCK_PADDING;
 
-		/* Fall through */
+			fallthrough;
 
 		case SEQ_BLOCK_PADDING:
 			/*
@@ -672,7 +672,7 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 
 			s->sequence = SEQ_BLOCK_CHECK;
 
-		/* Fall through */
+			fallthrough;
 
 		case SEQ_BLOCK_CHECK:
 			if (s->check_type == XZ_CHECK_CRC32) {
@@ -701,7 +701,7 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 
 			s->sequence = SEQ_INDEX_PADDING;
 
-		/* Fall through */
+			fallthrough;
 
 		case SEQ_INDEX_PADDING:
 			while ((s->index.size + (b->in_pos - s->in_start))
@@ -725,7 +725,7 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 
 			s->sequence = SEQ_INDEX_CRC32;
 
-		/* Fall through */
+			fallthrough;
 
 		case SEQ_INDEX_CRC32:
 			ret = crc_validate(s, b, 32);
@@ -735,7 +735,7 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 			s->temp.size = STREAM_HEADER_SIZE;
 			s->sequence = SEQ_STREAM_FOOTER;
 
-		/* Fall through */
+			fallthrough;
 
 		case SEQ_STREAM_FOOTER:
 			if (!fill_temp(s, b))
