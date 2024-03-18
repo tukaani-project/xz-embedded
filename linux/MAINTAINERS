@@ -1,0 +1,13 @@
+XZ EMBEDDED
+M:	Lasse Collin <lasse.collin@tukaani.org>
+M:	Jia Tan <jiat0218@gmail.com>
+S:	Maintained
+W:	https://xz.tukaani.org/xz-embedded/
+B:	https://github.com/tukaani-project/xz-embedded/issues
+C:	irc://irc.libera.chat/tukaani
+F:	Documentation/staging/xz.rst
+F:	include/linux/decompress/unxz.h
+F:	include/linux/xz.h
+F:	lib/decompress_unxz.c
+F:	lib/xz/
+F:	scripts/xz_wrap.sh
