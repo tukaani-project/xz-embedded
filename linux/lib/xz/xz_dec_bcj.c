@@ -341,7 +341,9 @@ static size_t bcj_arm64(struct xz_dec_bcj *s, uint8_t *buf, size_t size)
 	uint32_t instr;
 	uint32_t addr;
 
-	for (i = 0; i + 4 <= size; i += 4) {
+	size &= ~(size_t)3;
+
+	for (i = 0; i < size; i += 4) {
 		instr = get_unaligned_le32(buf + i);
 
 		if ((instr >> 26) == 0x25) {
