@@ -38,7 +38,7 @@ Compiling the Linux kernel module
                 CONFIG_XZ_DEC_X86=y CONFIG_XZ_DEC_ARM=y \
                 CONFIG_XZ_DEC_ARMTHUMB=y CONFIG_XZ_DEC_ARM64=y \
                 CONFIG_XZ_DEC_POWERPC=y CONFIG_XZ_DEC_IA64=y \
-                CONFIG_XZ_DEC_SPARC=y
+                CONFIG_XZ_DEC_SPARC=y CONFIG_XZ_DEC_RISCV=y
 
     If you want only one or a few of the BCJ filters, omit the appropriate
     variables. CONFIG_XZ_DEC_BCJ=y is always required to build the support
@@ -152,6 +152,7 @@ BCJ filter support
         XZ_DEC_ARMTHUMB     ARM-Thumb           Big or little endian
         XZ_DEC_ARM64        ARM64               Big or little endian
         XZ_DEC_SPARC        SPARC               Big or little endian
+        XZ_DEC_RISCV        RISC-V              Big or little endian
 
     While some architectures are (partially) bi-endian, the endianness
     setting doesn't change the endianness of the instructions on all

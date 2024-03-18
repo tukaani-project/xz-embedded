@@ -20,6 +20,7 @@
 /* #define XZ_DEC_ARM */
 /* #define XZ_DEC_ARMTHUMB */
 /* #define XZ_DEC_ARM64 */
+/* #define XZ_DEC_RISCV */
 /* #define XZ_DEC_POWERPC */
 /* #define XZ_DEC_IA64 */
 /* #define XZ_DEC_SPARC */
