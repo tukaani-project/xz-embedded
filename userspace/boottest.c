@@ -18,6 +18,12 @@ static void error(/*const*/ char *msg)
 	fprintf(stderr, "%s\n", msg);
 }
 
+/*
+ * Disable XZ_UNSUPPORTED_CHECK as it's not used in Linux and thus
+ * decompress_unxz.c doesn't handle it either (it thinks it's a bug).
+ */
+#undef XZ_DEC_ANY_CHECK
+
 /* Disable the CRC64 support even if it was enabled in the Makefile. */
 #undef XZ_USE_CRC64
 
