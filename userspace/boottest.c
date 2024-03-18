@@ -26,12 +26,12 @@ static void error(/*const*/ char *msg)
 static uint8_t in[1024 * 1024];
 static uint8_t out[1024 * 1024];
 
-static int fill(void *buf, unsigned int size)
+static long fill(void *buf, unsigned long size)
 {
 	return fread(buf, 1, size, stdin);
 }
 
-static int flush(/*const*/ void *buf, unsigned int size)
+static long flush(/*const*/ void *buf, unsigned long size)
 {
 	return fwrite(buf, 1, size, stdout);
 }
@@ -41,7 +41,8 @@ static void test_buf_to_buf(void)
 	size_t in_size;
 	int ret;
 	in_size = fread(in, 1, sizeof(in), stdin);
-	ret = decompress(in, in_size, NULL, NULL, out, NULL, &error);
+	ret = __decompress(in, in_size, NULL, NULL, out, sizeof(out),
+			NULL, &error);
 	/* fwrite(out, 1, FIXME, stdout); */
 	fprintf(stderr, "ret = %d\n", ret);
 }
@@ -49,17 +50,19 @@ static void test_buf_to_buf(void)
 static void test_buf_to_cb(void)
 {
 	size_t in_size;
-	int in_used;
+	long in_used;
 	int ret;
 	in_size = fread(in, 1, sizeof(in), stdin);
-	ret = decompress(in, in_size, NULL, &flush, NULL, &in_used, &error);
-	fprintf(stderr, "ret = %d; in_used = %d\n", ret, in_used);
+	ret = __decompress(in, in_size, NULL, &flush, NULL, sizeof(out),
+			&in_used, &error);
+	fprintf(stderr, "ret = %d; in_used = %ld\n", ret, in_used);
 }
 
 static void test_cb_to_cb(void)
 {
 	int ret;
-	ret = decompress(NULL, 0, &fill, &flush, NULL, NULL, &error);
+	ret = __decompress(NULL, 0, &fill, &flush, NULL, sizeof(out),
+			NULL, &error);
 	fprintf(stderr, "ret = %d\n", ret);
 }
 
@@ -69,11 +72,12 @@ static void test_cb_to_cb(void)
  */
 static void test_cb_to_buf(void)
 {
-	int in_used;
+	long in_used;
 	int ret;
-	ret = decompress(in, 0, &fill, NULL, out, &in_used, &error);
+	ret = __decompress(in, 0, &fill, NULL, out, sizeof(out),
+			&in_used, &error);
 	/* fwrite(out, 1, FIXME, stdout); */
-	fprintf(stderr, "ret = %d; in_used = %d\n", ret, in_used);
+	fprintf(stderr, "ret = %d; in_used = %ld\n", ret, in_used);
 }
 
 int main(int argc, char **argv)
