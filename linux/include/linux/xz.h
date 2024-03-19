@@ -215,7 +215,7 @@ XZ_EXTERN struct xz_dec *xz_dec_init(enum xz_mode mode, uint32_t dict_max);
  * the multi-call decoder if you don't want to uncompress the whole stream.
  *
  * Use xz_dec_run() when XZ data is stored inside some other file format.
- * The decoding will stop after one XZ stream has been decompresed. To
+ * The decoding will stop after one XZ stream has been decompressed. To
  * decompress regular .xz files which might have multiple concatenated
  * streams, use xz_dec_catrun() instead.
  */
