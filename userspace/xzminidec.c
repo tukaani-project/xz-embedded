@@ -7,10 +7,13 @@
  */
 
 /*
- * This is really limited: Not all filters from .xz format are supported,
- * only CRC32 is supported as the integrity check, and decoding of
- * concatenated .xz streams is not supported. Thus, you may want to look
- * at xzdec from XZ Utils if a few KiB bigger tool is not a problem.
+ * This is a very limited .xz decoder. Only LZMA2 and the BCJ filters
+ * are supported, and the BCJ filters cannot use Filter Properties.
+ * SHA256 is not supported as an integrity check. The LZMA2 dictionary
+ * sizes can be at most 64 MiB, but this can be modified by changing
+ * DICT_SIZE_MAX.
+ *
+ * See xzdec from XZ Utils if a few KiB bigger tool is not a problem.
  */
 
 #include <stdbool.h>
