@@ -18,6 +18,10 @@
 #include <string.h>
 #include "xz.h"
 
+#ifndef DICT_SIZE_MAX
+#	define DICT_SIZE_MAX (64U << 20)
+#endif
+
 static uint8_t in[BUFSIZ];
 static uint8_t out[BUFSIZ];
 
@@ -44,7 +48,7 @@ int main(int argc, char **argv)
 	 * Support up to 64 MiB dictionary. The actually needed memory
 	 * is allocated once the headers have been parsed.
 	 */
-	s = xz_dec_init(XZ_DYNALLOC, 1 << 26);
+	s = xz_dec_init(XZ_DYNALLOC, DICT_SIZE_MAX);
 	if (s == NULL) {
 		msg = "Memory allocation failed\n";
 		goto error;
