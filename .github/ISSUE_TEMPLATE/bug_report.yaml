@@ -1,0 +1,48 @@
+name: Bug Report
+description: File a bug report
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for notifying us about this bug! If the bug is a security
+        vulnerabilty, please report it to xz@tukaani.org or create a private
+        Security Advisory instead.
+  - type: markdown
+    attributes:
+      value: |
+        The code in this repository contains a few features that aren't
+        in the XZ Embedded variant in the Linux kernel. If you are using
+        the version in Linux, or any other outside project, please mention
+        this.
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: Also tell us, what did you expect to happen?
+      placeholder: What happened
+    validations:
+      required: true
+  - type: input
+    id: our_version
+    attributes:
+      label: Version
+      description: As best as you can determine, what version are you using?
+    validations:
+      required: false
+  - type: input
+    id: os_version
+    attributes:
+      label: Operating System
+      description: What OS type and version are you running?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: |
+          Please copy and paste any relevant log output. This will be
+          automatically formatted into code, so no need for backticks.
+      render: shell
