@@ -11,14 +11,14 @@ XZ is a general purpose data compression format with high compression
 ratio. The XZ decompressor in Linux is called XZ Embedded. It supports
 the LZMA2 filter and optionally also Branch/Call/Jump (BCJ) filters
 for executable code. CRC32 is supported for integrity checking. The
-home page of XZ Embedded is at <https://xz.tukaani.org/xz-embedded/>.
+home page of XZ Embedded is at <https://tukaani.org/xz/embedded.html>.
 There you can find the latest version which includes a few optional
 extra features that aren't required in the Linux kernel and information
 about using the code outside the Linux kernel.
 
 For userspace, XZ Utils provide a zlib-like compression library
 and a gzip-like command line tool. XZ Utils can be downloaded from
-<https://xz.tukaani.org/xz-utils/>.
+<https://tukaani.org/xz/>.
 
 XZ related components in the kernel
 ===================================
