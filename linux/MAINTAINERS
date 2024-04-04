@@ -1,8 +1,7 @@
 XZ EMBEDDED
 M:	Lasse Collin <lasse.collin@tukaani.org>
-M:	Jia Tan <jiat0218@gmail.com>
 S:	Maintained
-W:	https://xz.tukaani.org/xz-embedded/
+W:	https://tukaani.org/xz/embedded.html
 B:	https://github.com/tukaani-project/xz-embedded/issues
 C:	irc://irc.libera.chat/tukaani
 F:	Documentation/staging/xz.rst
