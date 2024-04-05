@@ -2,8 +2,8 @@
 Authors of XZ Embedded
 ======================
 
-    XZ Embedded is developed and maintained by Lasse Collin
-    <lasse.collin@tukaani.org> and Jia Tan <jiat0218@gmail.com>.
+    XZ Embedded is developed and maintained by
+    Lasse Collin <lasse.collin@tukaani.org>.
 
     Major parts of XZ Embedded are based on code written by Igor Pavlov,
     specifically the LZMA SDK <https://7-zip.org/sdk.html>. Without this

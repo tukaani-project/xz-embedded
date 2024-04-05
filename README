@@ -165,11 +165,7 @@ Notes about shared libraries
 
 Contact information
 
-    If you have questions, bug reports, patches etc. related to
-    XZ Embedded, the project maintainers Lasse Collin and Jia Tan
-    can be reached via email, IRC, or GitHub:
-
-      - Email: xz@tukaani.org
-      - IRC: #tukaani on Libera Chat
-      - GitHub: https://github.com/tukaani-project/xz-embedded
+    Email: Lasse Collin <lasse.collin@tukaani.org>
+    IRC: Larhzu on #tukaani on Libera Chat
+    GitHub: https://github.com/tukaani-project/xz-embedded
 
