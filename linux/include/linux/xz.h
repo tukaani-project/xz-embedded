@@ -314,8 +314,8 @@ struct xz_dec_microlzma;
  * struct xz_dec_microlzma. If memory allocation fails or
  * dict_size is invalid, NULL is returned.
  */
-extern struct xz_dec_microlzma *xz_dec_microlzma_alloc(enum xz_mode mode,
-						       uint32_t dict_size);
+XZ_EXTERN struct xz_dec_microlzma *xz_dec_microlzma_alloc(enum xz_mode mode,
+							  uint32_t dict_size);
 
 /**
  * xz_dec_microlzma_reset() - Reset the MicroLZMA decoder state
@@ -331,9 +331,9 @@ extern struct xz_dec_microlzma *xz_dec_microlzma_alloc(enum xz_mode mode,
  *              requiring stdbool.h. This should normally be set to true.
  *              When this is set to false, error detection is weaker.
  */
-extern void xz_dec_microlzma_reset(struct xz_dec_microlzma *s,
-				   uint32_t comp_size, uint32_t uncomp_size,
-				   int uncomp_size_is_exact);
+XZ_EXTERN void xz_dec_microlzma_reset(struct xz_dec_microlzma *s,
+				      uint32_t comp_size, uint32_t uncomp_size,
+				      int uncomp_size_is_exact);
 
 /**
  * xz_dec_microlzma_run() - Run the MicroLZMA decoder
@@ -371,15 +371,15 @@ extern void xz_dec_microlzma_reset(struct xz_dec_microlzma *s,
  * may be changed normally like with XZ_PREALLOC. This way input data can be
  * provided from non-contiguous memory.
  */
-extern enum xz_ret xz_dec_microlzma_run(struct xz_dec_microlzma *s,
-					struct xz_buf *b);
+XZ_EXTERN enum xz_ret xz_dec_microlzma_run(struct xz_dec_microlzma *s,
+					   struct xz_buf *b);
 
 /**
  * xz_dec_microlzma_end() - Free the memory allocated for the decoder state
  * @s:          Decoder state allocated using xz_dec_microlzma_alloc().
  *              If s is NULL, this function does nothing.
  */
-extern void xz_dec_microlzma_end(struct xz_dec_microlzma *s);
+XZ_EXTERN void xz_dec_microlzma_end(struct xz_dec_microlzma *s);
 
 /*
  * Standalone build (userspace build or in-kernel build for boot time use)
