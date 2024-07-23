@@ -22,7 +22,7 @@
 extern "C" {
 #endif
 
-/* In Linux, this is used to make extern functions static when needed. */
+/* "#define XZ_EXTERN static" can be used to make extern functions static. */
 #ifndef XZ_EXTERN
 #	define XZ_EXTERN extern
 #endif
@@ -290,10 +290,6 @@ XZ_EXTERN void xz_dec_end(struct xz_dec *s);
  * 3/0/2, the first byte is 0xA2. This way the first byte can never be 0x00.
  * Just like with LZMA2, lc + lp <= 4 must be true. The LZMA end-of-stream
  * marker must not be used. The unused values are reserved for future use.
- *
- * These functions aren't used or available in preboot code and thus aren't
- * marked with XZ_EXTERN. This avoids warnings about static functions that
- * are never defined.
  */
 
 /*
