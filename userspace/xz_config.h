@@ -55,7 +55,8 @@
 #ifndef fallthrough
 #	if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202000
 #		define fallthrough [[fallthrough]]
-#	elif defined(__GNUC__) && __GNUC__ >= 7
+#	elif (defined(__GNUC__) && __GNUC__ >= 7) \
+			|| (defined(__clang_major__) && __clang_major__ >= 10)
 #		define fallthrough __attribute__((__fallthrough__))
 #	else
 #		define fallthrough do {} while (0)
