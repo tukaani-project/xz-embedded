@@ -124,12 +124,15 @@ static inline void put_unaligned_be32(uint32_t val, uint8_t *buf)
 #endif
 
 /*
- * Use get_unaligned_le32() also for aligned access for simplicity. On
- * little endian systems, #define get_le32(ptr) (*(const uint32_t *)(ptr))
- * could save a few bytes in code size.
+ * To keep things simpler, use the generic unaligned methods also for
+ * aligned access. The only place where performance could matter is
+ * SHA-256 but files using SHA-256 aren't common.
  */
 #ifndef get_le32
 #	define get_le32 get_unaligned_le32
+#endif
+#ifndef get_be32
+#	define get_be32 get_unaligned_be32
 #endif
 
 #endif

@@ -24,8 +24,12 @@ static void error(/*const*/ char *msg)
  */
 #undef XZ_DEC_ANY_CHECK
 
-/* Disable the CRC64 support even if it was enabled in the Makefile. */
+/*
+ * Disable the CRC64 and SHA-256 support even if they were enabled
+ * in the Makefile.
+ */
 #undef XZ_USE_CRC64
+#undef XZ_USE_SHA256
 
 #include "../linux/lib/decompress_unxz.c"
 
