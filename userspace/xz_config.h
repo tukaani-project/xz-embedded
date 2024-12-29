@@ -53,7 +53,7 @@
 #define min_t(type, x, y) min(x, y)
 
 #ifndef fallthrough
-#	if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202000
+#	if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311
 #		define fallthrough [[fallthrough]]
 #	elif (defined(__GNUC__) && __GNUC__ >= 7) \
 			|| (defined(__clang_major__) && __clang_major__ >= 10)
