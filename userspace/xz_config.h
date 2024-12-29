@@ -96,7 +96,7 @@ static inline uint32_t get_unaligned_le32(const uint8_t *buf)
 #ifndef get_unaligned_be32
 static inline uint32_t get_unaligned_be32(const uint8_t *buf)
 {
-	return (uint32_t)(buf[0] << 24)
+	return (uint32_t)((uint32_t)buf[0] << 24)
 			| ((uint32_t)buf[1] << 16)
 			| ((uint32_t)buf[2] << 8)
 			| (uint32_t)buf[3];
