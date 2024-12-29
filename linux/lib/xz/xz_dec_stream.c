@@ -161,9 +161,9 @@ static const uint8_t check_sizes[16] = {
 
 /*
  * Fill s->temp by copying data starting from b->in[b->in_pos]. Caller
- * must have set s->temp.pos to indicate how much data we are supposed
- * to copy into s->temp.buf. Return true once s->temp.pos has reached
- * s->temp.size.
+ * must have set s->temp.pos and s->temp.size to indicate how much data
+ * we are supposed to copy into s->temp.buf. Return true once s->temp.pos
+ * has reached s->temp.size.
  */
 static bool fill_temp(struct xz_dec *s, struct xz_buf *b)
 {

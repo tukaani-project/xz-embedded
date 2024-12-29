@@ -189,7 +189,7 @@ struct lzma_dec {
 	uint16_t dist_slot[DIST_STATES][DIST_SLOTS];
 
 	/*
-	 * Probility trees for additional bits for match distance
+	 * Probability trees for additional bits for match distance
 	 * when the distance is in the range [4, 127].
 	 */
 	uint16_t dist_special[FULL_DISTANCES - DIST_MODEL_END];
