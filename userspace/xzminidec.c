@@ -21,6 +21,11 @@
 #include <string.h>
 #include "xz.h"
 
+#ifdef _WIN32
+#	include <io.h>
+#	include <fcntl.h>
+#endif
+
 #ifndef DICT_SIZE_MAX
 #	define DICT_SIZE_MAX (64U << 20)
 #endif
@@ -34,6 +39,11 @@ int main(int argc, char **argv)
 	struct xz_dec *s;
 	enum xz_ret ret;
 	const char *msg;
+
+#ifdef _WIN32
+	_setmode(_fileno(stdin), _O_BINARY);
+	_setmode(_fileno(stdout), _O_BINARY);
+#endif
 
 	if (argc >= 2 && strcmp(argv[1], "--help") == 0) {
 		fputs("Uncompress a .xz file from stdin to stdout.\n"
