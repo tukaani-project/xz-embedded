@@ -27,9 +27,6 @@ Conformance to the .xz file format specification
     As of the .xz file format specification version 1.2.0, this
     decompressor implementation has the following limitations:
 
-      - SHA-256 isn't supported. It can be ignored as an unsupported
-        checked type if that feature is enabled at build time.
-
       - Delta filter is not included.
 
       - BCJ filters don't support non-default start offset.
@@ -92,9 +89,8 @@ Supporting concatenated .xz files
 Integrity check support
 
     XZ Embedded always supports the integrity check types None and
-    CRC32. Support for CRC64 is optional. SHA-256 is currently not
-    supported in XZ Embedded although the .xz format does support it.
-    The xz tool from XZ Utils uses CRC64 by default, but CRC32 is usually
+    CRC32. Support for CRC64 and SHA-256 is optional. The xz tool
+    from XZ Utils uses CRC64 by default, but CRC32 is usually
     enough in embedded systems to keep the code size smaller.
 
     If you want support for CRC64, you need to copy linux/lib/xz/xz_crc64.c
