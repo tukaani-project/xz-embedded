@@ -71,6 +71,8 @@ struct xz_dec_bcj {
 		 * ARM              4           0
 		 * ARM-Thumb        2           2
 		 * SPARC            4           0
+		 * ARM64            4           0
+		 * RISC-V           2           6
 		 */
 		uint8_t buf[16];
 	} temp;
