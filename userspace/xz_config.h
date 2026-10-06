@@ -39,7 +39,7 @@
 
 #include "xz.h"
 
-#define kmalloc(size, flags) malloc(size)
+#define kmalloc_obj(type) malloc(sizeof(type))
 #define kfree(ptr) free(ptr)
 #define vmalloc(size) malloc(size)
 #define vfree(ptr) free(ptr)

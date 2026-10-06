@@ -1140,7 +1140,7 @@ XZ_EXTERN enum xz_ret xz_dec_lzma2_run(struct xz_dec_lzma2 *s,
 XZ_EXTERN struct xz_dec_lzma2 *xz_dec_lzma2_create(enum xz_mode mode,
 						   uint32_t dict_max)
 {
-	struct xz_dec_lzma2 *s = kmalloc(sizeof(*s), GFP_KERNEL);
+	struct xz_dec_lzma2 *s = kmalloc_obj(*s);
 	if (s == NULL)
 		return NULL;
 
@@ -1298,7 +1298,7 @@ XZ_EXTERN struct xz_dec_microlzma *xz_dec_microlzma_alloc(enum xz_mode mode,
 	if (dict_size < 4096 || dict_size > (3U << 30))
 		return NULL;
 
-	s = kmalloc(sizeof(*s), GFP_KERNEL);
+	s = kmalloc_obj(*s);
 	if (s == NULL)
 		return NULL;
 

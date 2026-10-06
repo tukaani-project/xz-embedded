@@ -932,7 +932,7 @@ XZ_EXTERN enum xz_ret xz_dec_catrun(struct xz_dec *s, struct xz_buf *b,
 
 XZ_EXTERN struct xz_dec *xz_dec_init(enum xz_mode mode, uint32_t dict_max)
 {
-	struct xz_dec *s = kmalloc(sizeof(*s), GFP_KERNEL);
+	struct xz_dec *s = kmalloc_obj(*s);
 	if (s == NULL)
 		return NULL;
 
