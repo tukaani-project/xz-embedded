@@ -50,7 +50,6 @@
 #ifndef min
 #	define min(x, y) ((x) < (y) ? (x) : (y))
 #endif
-#define min_t(type, x, y) min(x, y)
 
 #ifndef fallthrough
 #	if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311
