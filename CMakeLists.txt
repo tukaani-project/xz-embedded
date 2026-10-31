@@ -77,6 +77,16 @@ set_target_properties(xz PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_library(${PROJECT_NAME}::xz ALIAS xz)
 
+# xz-embedded implements only a decoder and ships no fixture data or
+# automated test of its own (its userspace/*.c and
+# linux/lib/xz/xz_dec_test.c tools all expect a .xz file or kernel module
+# fed in by hand). Check the decoder against known .xz streams from the
+# reference xz-utils compressor instead.
+include(CTest)
+
+if(BUILD_TESTING)
+    add_subdirectory(cmake/tests)
+endif()
 
 install(TARGETS xz
     EXPORT ${PROJECT_NAME}Targets
