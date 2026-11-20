@@ -339,7 +339,7 @@ static inline uint32_t dict_get(const struct dictionary *dict, size_t dist)
 /*
  * Put one byte into the dictionary. It is assumed that there is space for it.
  */
-static inline void dict_put(struct dictionary *dict, uint8_t byte)
+static inline void dict_put(struct dictionary *restrict dict, uint8_t byte)
 {
 	dict->buf[dict->pos++] = byte;
 
@@ -352,7 +352,8 @@ static inline void dict_put(struct dictionary *dict, uint8_t byte)
  * invalid, false is returned. On success, true is returned and *len is
  * updated to indicate how many bytes were left to be repeated.
  */
-static bool dict_repeat(struct dictionary *dict, size_t *len, size_t dist)
+static bool dict_repeat(struct dictionary *restrict dict,
+			size_t *restrict len, size_t dist)
 {
 	size_t back;
 	size_t left;
