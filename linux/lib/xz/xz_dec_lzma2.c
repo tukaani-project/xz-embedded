@@ -628,8 +628,11 @@ static __always_inline void lzma_literal(struct xz_dec_lzma2 *s,
 	probs = lzma_literal_probs(s);
 
 	if (lzma_state_is_literal(s->lzma.state)) {
+		lzma_state_literal_normal(&s->lzma.state);
 		symbol = rc_bittree(rc, probs, 0x100);
 	} else {
+		lzma_state_literal_matched(&s->lzma.state);
+
 		symbol = 1;
 		match_byte = dict_get(&s->dict, s->lzma.rep0) << 1;
 		offset = 0x100;
@@ -650,7 +653,6 @@ static __always_inline void lzma_literal(struct xz_dec_lzma2 *s,
 	}
 
 	dict_put(&s->dict, (uint8_t)symbol);
-	lzma_state_literal(&s->lzma.state);
 }
 
 /* Decode the length of the match into s->lzma.len. */

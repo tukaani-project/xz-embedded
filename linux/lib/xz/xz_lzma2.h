@@ -59,15 +59,16 @@ enum lzma_state {
 /* The lowest 7 states indicate that the previous state was a literal. */
 #define LIT_STATES 7
 
-/* Indicate that the latest symbol was a literal. */
-static __always_inline void lzma_state_literal(enum lzma_state *state)
+/* Indicate that the latest symbol was a literal without a match byte. */
+static __always_inline void lzma_state_literal_normal(enum lzma_state *state)
 {
-	if (*state <= STATE_SHORTREP_LIT_LIT)
-		*state = STATE_LIT_LIT;
-	else if (*state <= STATE_LIT_SHORTREP)
-		*state -= 3;
-	else
-		*state -= 6;
+	*state = *state <= STATE_SHORTREP_LIT_LIT ? STATE_LIT_LIT : *state - 3;
+}
+
+/* Indicate that the latest symbol was a literal with a match byte. */
+static __always_inline void lzma_state_literal_matched(enum lzma_state *state)
+{
+	*state = *state <= STATE_LIT_SHORTREP ? *state - 3 : *state - 6;
 }
 
 /* Indicate that the latest symbol was a match. */
