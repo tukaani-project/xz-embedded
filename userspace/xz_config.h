@@ -26,6 +26,26 @@
 /* #define XZ_DEC_SPARC */
 
 /*
+ * Use unaligned access if possible. The code uses __builtin_memcpy() to keep
+ * it fast with GCC's and Clang's -fno-builtin.
+ *
+ * NOTE: On ARM64, GCC <= 16.1 and likely some newer versions define
+ * __ARM_FEATURE_UNALIGNED even with -mstrict-align. See:
+ * https://gcc.gnu.org/bugzilla/show_bug.cgi?id=111555
+ */
+#if defined(__x86_64__) \
+		|| defined(__powerpc__) \
+		|| defined(__POWERPC__) \
+		|| defined(__ARM_FEATURE_UNALIGNED) \
+		|| defined(__riscv_misaligned_fast) \
+		|| defined(_MSC_VER)
+#	define XZ_USE_UNALIGNED
+#	if !defined(__GNUC__) && !defined(__clang__)
+#		define __builtin_memcpy memcpy
+#	endif
+#endif
+
+/*
  * Visual Studio 2013 update 2 supports only __inline, not inline.
  * MSVC v19.0 / VS 2015 and newer support both.
  */
