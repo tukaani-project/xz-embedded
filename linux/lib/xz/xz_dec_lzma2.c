@@ -611,7 +611,7 @@ static uint16_t *lzma_literal_probs(struct xz_dec_lzma2 *s)
 }
 
 /* Decode a literal (one 8-bit byte) */
-static void lzma_literal(struct xz_dec_lzma2 *s)
+static void lzma_literal(struct xz_dec_lzma2 *s, struct rc_dec *rc)
 {
 	uint16_t *probs;
 	uint32_t symbol;
@@ -623,7 +623,7 @@ static void lzma_literal(struct xz_dec_lzma2 *s)
 	probs = lzma_literal_probs(s);
 
 	if (lzma_state_is_literal(s->lzma.state)) {
-		symbol = rc_bittree(&s->rc, probs, 0x100);
+		symbol = rc_bittree(rc, probs, 0x100);
 	} else {
 		symbol = 1;
 		match_byte = dict_get(&s->dict, s->lzma.rep0) << 1;
@@ -634,7 +634,7 @@ static void lzma_literal(struct xz_dec_lzma2 *s)
 			match_byte <<= 1;
 			i = offset + match_bit + symbol;
 
-			if (rc_bit(&s->rc, &probs[i])) {
+			if (rc_bit(rc, &probs[i])) {
 				symbol = (symbol << 1) + 1;
 				offset &= match_bit;
 			} else {
@@ -649,18 +649,20 @@ static void lzma_literal(struct xz_dec_lzma2 *s)
 }
 
 /* Decode the length of the match into s->lzma.len. */
-static void lzma_len(struct xz_dec_lzma2 *s, struct lzma_len_dec *l,
+static void lzma_len(struct xz_dec_lzma2 *s,
+		     struct rc_dec *rc,
+		     struct lzma_len_dec *l,
 		     uint32_t pos_state)
 {
 	uint16_t *probs;
 	uint32_t limit;
 
-	if (!rc_bit(&s->rc, &l->choice)) {
+	if (!rc_bit(rc, &l->choice)) {
 		probs = l->low[pos_state];
 		limit = LEN_LOW_SYMBOLS;
 		s->lzma.len = MATCH_LEN_MIN;
 	} else {
-		if (!rc_bit(&s->rc, &l->choice2)) {
+		if (!rc_bit(rc, &l->choice2)) {
 			probs = l->mid[pos_state];
 			limit = LEN_MID_SYMBOLS;
 			s->lzma.len = MATCH_LEN_MIN + LEN_LOW_SYMBOLS;
@@ -672,11 +674,13 @@ static void lzma_len(struct xz_dec_lzma2 *s, struct lzma_len_dec *l,
 		}
 	}
 
-	s->lzma.len += rc_bittree(&s->rc, probs, limit) - limit;
+	s->lzma.len += rc_bittree(rc, probs, limit) - limit;
 }
 
 /* Decode a match. The distance will be stored in s->lzma.rep0. */
-static void lzma_match(struct xz_dec_lzma2 *s, uint32_t pos_state)
+static void lzma_match(struct xz_dec_lzma2 *s,
+		       struct rc_dec *rc,
+		       uint32_t pos_state)
 {
 	uint16_t *probs;
 	uint32_t dist_slot;
@@ -688,10 +692,10 @@ static void lzma_match(struct xz_dec_lzma2 *s, uint32_t pos_state)
 	s->lzma.rep2 = s->lzma.rep1;
 	s->lzma.rep1 = s->lzma.rep0;
 
-	lzma_len(s, &s->lzma.match_len_dec, pos_state);
+	lzma_len(s, rc, &s->lzma.match_len_dec, pos_state);
 
 	probs = s->lzma.dist_slot[lzma_get_dist_state(s->lzma.len)];
-	dist_slot = rc_bittree(&s->rc, probs, DIST_SLOTS) - DIST_SLOTS;
+	dist_slot = rc_bittree(rc, probs, DIST_SLOTS) - DIST_SLOTS;
 
 	if (dist_slot < DIST_MODEL_START) {
 		s->lzma.rep0 = dist_slot;
@@ -703,12 +707,11 @@ static void lzma_match(struct xz_dec_lzma2 *s, uint32_t pos_state)
 			s->lzma.rep0 <<= limit;
 			probs = s->lzma.dist_special + s->lzma.rep0
 					- dist_slot - 1;
-			rc_bittree_reverse(&s->rc, probs,
-					&s->lzma.rep0, limit);
+			rc_bittree_reverse(rc, probs, &s->lzma.rep0, limit);
 		} else {
-			rc_direct(&s->rc, &s->lzma.rep0, limit - ALIGN_BITS);
+			rc_direct(rc, &s->lzma.rep0, limit - ALIGN_BITS);
 			s->lzma.rep0 <<= ALIGN_BITS;
-			rc_bittree_reverse(&s->rc, s->lzma.dist_align,
+			rc_bittree_reverse(rc, s->lzma.dist_align,
 					&s->lzma.rep0, ALIGN_BITS);
 		}
 	}
@@ -718,22 +721,24 @@ static void lzma_match(struct xz_dec_lzma2 *s, uint32_t pos_state)
  * Decode a repeated match. The distance is one of the four most recently
  * seen matches. The distance will be stored in s->lzma.rep0.
  */
-static void lzma_rep_match(struct xz_dec_lzma2 *s, uint32_t pos_state)
+static void lzma_rep_match(struct xz_dec_lzma2 *s,
+			   struct rc_dec *rc,
+			   uint32_t pos_state)
 {
 	uint32_t tmp;
 
-	if (!rc_bit(&s->rc, &s->lzma.is_rep0[s->lzma.state])) {
-		if (!rc_bit(&s->rc, &s->lzma.is_rep0_long[
+	if (!rc_bit(rc, &s->lzma.is_rep0[s->lzma.state])) {
+		if (!rc_bit(rc, &s->lzma.is_rep0_long[
 				s->lzma.state][pos_state])) {
 			lzma_state_short_rep(&s->lzma.state);
 			s->lzma.len = 1;
 			return;
 		}
 	} else {
-		if (!rc_bit(&s->rc, &s->lzma.is_rep1[s->lzma.state])) {
+		if (!rc_bit(rc, &s->lzma.is_rep1[s->lzma.state])) {
 			tmp = s->lzma.rep1;
 		} else {
-			if (!rc_bit(&s->rc, &s->lzma.is_rep2[s->lzma.state])) {
+			if (!rc_bit(rc, &s->lzma.is_rep2[s->lzma.state])) {
 				tmp = s->lzma.rep2;
 			} else {
 				tmp = s->lzma.rep3;
@@ -748,12 +753,13 @@ static void lzma_rep_match(struct xz_dec_lzma2 *s, uint32_t pos_state)
 	}
 
 	lzma_state_long_rep(&s->lzma.state);
-	lzma_len(s, &s->lzma.rep_len_dec, pos_state);
+	lzma_len(s, rc, &s->lzma.rep_len_dec, pos_state);
 }
 
 /* LZMA decoder core */
 static bool lzma_main(struct xz_dec_lzma2 *s)
 {
+	struct rc_dec rc = s->rc;
 	uint32_t pos_state;
 
 	/*
@@ -767,17 +773,17 @@ static bool lzma_main(struct xz_dec_lzma2 *s)
 	 * Decode more LZMA symbols. One iteration may consume up to
 	 * LZMA_IN_REQUIRED - 1 bytes.
 	 */
-	while (dict_has_space(&s->dict) && !rc_limit_exceeded(&s->rc)) {
+	while (dict_has_space(&s->dict) && !rc_limit_exceeded(&rc)) {
 		pos_state = s->dict.pos & s->lzma.pos_mask;
 
-		if (!rc_bit(&s->rc, &s->lzma.is_match[
+		if (!rc_bit(&rc, &s->lzma.is_match[
 				s->lzma.state][pos_state])) {
-			lzma_literal(s);
+			lzma_literal(s, &rc);
 		} else {
-			if (rc_bit(&s->rc, &s->lzma.is_rep[s->lzma.state]))
-				lzma_rep_match(s, pos_state);
+			if (rc_bit(&rc, &s->lzma.is_rep[s->lzma.state]))
+				lzma_rep_match(s, &rc, pos_state);
 			else
-				lzma_match(s, pos_state);
+				lzma_match(s, &rc, pos_state);
 
 			if (!dict_repeat(&s->dict, &s->lzma.len, s->lzma.rep0))
 				return false;
@@ -788,8 +794,15 @@ static bool lzma_main(struct xz_dec_lzma2 *s)
 	 * Having the range decoder always normalized when we are outside
 	 * this function makes it easier to correctly handle end of the chunk.
 	 */
-	rc_normalize(&s->rc);
+	rc_normalize(&rc);
 
+	/*
+	 * Copy the modified members back to *s. It's enough to do it here
+	 * because the caller doesn't care about these if an error occurs.
+	 */
+	s->rc.range = rc.range;
+	s->rc.code = rc.code;
+	s->rc.in_pos = rc.in_pos;
 	return true;
 }
 
