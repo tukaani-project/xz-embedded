@@ -696,7 +696,6 @@ static __always_inline void lzma_literal(struct xz_dec_lzma2 *s,
 	uint32_t match_byte;
 	uint32_t match_bit;
 	uint32_t offset;
-	uint32_t i;
 
 	probs = lzma_literal_probs(s, dict);
 
@@ -713,9 +712,8 @@ static __always_inline void lzma_literal(struct xz_dec_lzma2 *s,
 		do {
 			match_bit = match_byte & offset;
 			match_byte <<= 1;
-			i = offset + match_bit + symbol;
 
-			if (rc_bit(rc, &probs[i])) {
+			if (rc_bit(rc, &probs[offset + match_bit + symbol])) {
 				symbol = (symbol << 1) + 1;
 				offset &= match_bit;
 			} else {
