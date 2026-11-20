@@ -770,9 +770,15 @@ static bool lzma_main(struct xz_dec_lzma2 *s)
 	/*
 	 * If the dictionary write limit was reached during the previous call,
 	 * try to finish the possibly pending repeat in the dictionary.
+	 * Here dict_repeat() will always return true.
+	 *
+	 * dict_repeat() has __always_inline because it must be inlined in
+	 * the main loop. Use a goto to avoid another copy of the function.
 	 */
-	if (dict_has_space(&s->dict) && s->lzma.len > 0)
-		dict_repeat(&s->dict, &s->lzma.len, s->lzma.rep0);
+	if (dict_has_space(&s->dict) && s->lzma.len > 0) {
+		/*dict_repeat(&s->dict, &s->lzma.len, s->lzma.rep0);*/
+		goto repeat;
+	}
 
 	/*
 	 * Decode more LZMA symbols. One iteration may consume up to
@@ -790,6 +796,7 @@ static bool lzma_main(struct xz_dec_lzma2 *s)
 			else
 				lzma_match(s, pos_state);
 
+repeat:
 			if (!dict_repeat(&s->dict, &s->lzma.len, s->lzma.rep0))
 				return false;
 		}
