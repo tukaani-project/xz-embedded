@@ -265,10 +265,10 @@ struct xz_dec_lzma2 {
 	 * bytes, but this is still the best order without sacrificing
 	 * the readability by splitting the structures.
 	 */
-	struct rc_dec rc;
 	struct dictionary dict;
 	struct lzma2_dec lzma2;
 	struct lzma_dec lzma;
+	struct rc_dec rc;
 
 	/*
 	 * Temporary buffer which holds a small number of input bytes between
