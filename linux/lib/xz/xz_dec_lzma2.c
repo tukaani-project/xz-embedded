@@ -56,7 +56,12 @@ struct dictionary {
 	 */
 	size_t full;
 
-	/* Write limit; we don't write to buf[limit] or later bytes. */
+	/*
+	 * Write limit. No meaningful writes are made past buf[limit].
+	 * However, the unaligned method in dict_repeat() may write extra
+	 * bytes past buf[limit] if limit < end, but it will then restore
+	 * the original bytes.
+	 */
 	size_t limit;
 
 	/*
@@ -349,6 +354,46 @@ static __always_inline void dict_put(struct dictionary *restrict dict,
  * Repeat given number of bytes from the given distance. If the distance is
  * invalid, false is returned. On success, true is returned and *len is
  * updated to indicate how many bytes were left to be repeated.
+ *
+ *                              * * *
+ *
+ * The unaligned method copies sizeof(size_t) bytes at a time if possible.
+ *
+ * When the number of bytes left to copy isn't a multiple of sizeof(size_t),
+ * the do-while loop will copy more bytes than needed. In multi-call mode,
+ * this overwrites the still-valid bytes at the tail of the dictionary, which
+ * need to be restored after the loop.
+ *
+ * In single-call mode, the extras bytes could appear in the output buffer,
+ * affecting struct xz_buf's buf[out_pos] and a few bytes after it (assuming
+ * that out_pos < out_size, of course). In most cases this would be harmless.
+ * For simplicity and to minimize surprises, save and restore even if
+ * multi-call modes are disabled at build time.
+ *
+ * NOTE: The bytes being saved and restored are often uninitialized.
+ * Sanitizers should still be happy because the data is only being copied.
+ *
+ * The save and restore steps could be avoided by adding a buffer zone to
+ * dict->buf. It would need to be a multiple of 16 bytes because the lowest
+ * four bits of dict->pos is are used for pos_mask and literal position mask.
+ * Dictionary size is typically a power of two, so allocating 16 bytes more
+ * with vmalloc() would mean allocating an extra page. When copying only
+ * sizeof(size_t) per iteration, the buffer zone method isn't faster than
+ * the save and restore method (at least on some x86-64, ARM64, and PowerPC).
+ *
+ * Alternatives to the save and restore method that were slower:
+ *
+ *   - Make the last copy overlap with the second last one. This requires
+ *     that left >= sizeof(size_t), so the fast code isn't used as often.
+ *
+ *   - Write the last (or first) bytes either byte-by-byte or as 1-3 writes
+ *     of 4+2+1 bytes. This has more unpredictable branches.
+ *
+ * unaligned_len_max could be left + sizeof(size_t), but the worst-case
+ * constant does just as well.
+ *
+ * Use __builtin_memcpy() instead of memcpy() to ensure good performance if
+ * this is built with -fno-builtin.
  */
 static __always_inline bool dict_repeat(struct dictionary *restrict dict,
 					size_t *restrict len, size_t dist)
@@ -366,11 +411,36 @@ static __always_inline bool dict_repeat(struct dictionary *restrict dict,
 	if (dist >= dict->pos)
 		back += dict->end;
 
-	do {
-		dict->buf[dict->pos++] = dict->buf[back++];
-		if (back == dict->end)
-			back = 0;
-	} while (--left > 0);
+#ifdef XZ_USE_UNALIGNED
+	const size_t unaligned_len_max = MATCH_LEN_MAX + sizeof(size_t);
+	if (dist >= sizeof(size_t) - 1
+			&& dict->end - back >= unaligned_len_max
+			&& dict->end - dict->pos >= unaligned_len_max) {
+		size_t saved;
+		__builtin_memcpy(&saved, dict->buf + dict->pos + left,
+				sizeof(saved));
+
+		size_t i = 0;
+		do {
+			size_t x;
+			__builtin_memcpy(&x, dict->buf + back + i, sizeof(x));
+			__builtin_memcpy(dict->buf + dict->pos + i, &x,
+					sizeof(x));
+			i += sizeof(x);
+		} while (i < left);
+
+		__builtin_memcpy(dict->buf + dict->pos + left, &saved,
+				sizeof(saved));
+		dict->pos += left;
+	} else
+#endif
+	{
+		do {
+			dict->buf[dict->pos++] = dict->buf[back++];
+			if (back == dict->end)
+				back = 0;
+		} while (--left > 0);
+	}
 
 	if (dict->full < dict->pos)
 		dict->full = dict->pos;

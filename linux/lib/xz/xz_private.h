@@ -48,6 +48,9 @@
 #		define memeq(a, b, size) (memcmp(a, b, size) == 0)
 #		define memzero(buf, size) memset(buf, 0, size)
 #	endif
+#	ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
+#		define XZ_USE_UNALIGNED
+#	endif
 #	define get_le32(p) le32_to_cpup((const uint32_t *)(p))
 #else
 	/*
