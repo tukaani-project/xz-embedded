@@ -568,21 +568,23 @@ static __always_inline uint32_t rc_bittree(struct rc_dec *rc,
 }
 
 /* Decode a bittree starting from the least significant bit. */
-static __always_inline void rc_bittree_reverse(struct rc_dec *rc,
-					       uint16_t *probs,
-					       uint32_t *dest, uint32_t limit)
+static __always_inline uint32_t rc_bittree_reverse(struct rc_dec *rc,
+						   uint16_t *probs,
+						   uint32_t limit)
 {
-	uint32_t symbol = 1;
-	uint32_t i = 0;
+	uint32_t symbol = 1U << (limit - 1);
+	uint32_t add = 1U << limit;
+	uint32_t carry;
 
 	do {
-		if (rc_bit(rc, &probs[symbol])) {
-			symbol = (symbol << 1) + 1;
-			*dest += 1 << i;
-		} else {
-			symbol <<= 1;
-		}
-	} while (++i < limit);
+		if (rc_bit(rc, &probs[symbol]))
+			symbol += add;
+
+		carry = symbol & 1;
+		symbol >>= 1;
+	} while (!carry);
+
+	return symbol;
 }
 
 /* Decode direct bits (fixed fifty-fifty probability) */
@@ -714,12 +716,12 @@ static __always_inline void lzma_match(struct xz_dec_lzma2 *s,
 			s->lzma.rep0 <<= limit;
 			probs = s->lzma.dist_special + s->lzma.rep0
 					- dist_slot - 1;
-			rc_bittree_reverse(rc, probs, &s->lzma.rep0, limit);
+			s->lzma.rep0 += rc_bittree_reverse(rc, probs, limit);
 		} else {
 			rc_direct(rc, &s->lzma.rep0, limit - ALIGN_BITS);
 			s->lzma.rep0 <<= ALIGN_BITS;
-			rc_bittree_reverse(rc, s->lzma.dist_align,
-					&s->lzma.rep0, ALIGN_BITS);
+			s->lzma.rep0 += rc_bittree_reverse(
+					rc, s->lzma.dist_align, ALIGN_BITS);
 		}
 	}
 }
