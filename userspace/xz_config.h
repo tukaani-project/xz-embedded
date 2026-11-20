@@ -25,6 +25,13 @@
 /* #define XZ_DEC_IA64 */
 /* #define XZ_DEC_SPARC */
 
+/* Use inline assembly if possible. */
+#if defined(__GNUC__) || defined(__clang__)
+#	ifdef __x86_64__
+#		define XZ_ASM_X86_64
+#	endif
+#endif
+
 /*
  * Use unaligned access if possible. The code uses __builtin_memcpy() to keep
  * it fast with GCC's and Clang's -fno-builtin.

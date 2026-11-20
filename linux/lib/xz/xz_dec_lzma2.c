@@ -588,6 +588,17 @@ static __always_inline void rc_normalize(struct rc_dec *rc)
 	}
 }
 
+#ifdef XZ_ASM_X86_64
+#	define RC_NORMALIZE_ASM \
+		"cmp	%[top_value], %[range]\n\t" \
+		"jae	1f\n\t" \
+		"shl	%[shift_bits], %[code]\n\t" \
+		"mov	(%[in_ptr], %[in_pos]), %b[code]\n\t" \
+		"shl	%[shift_bits], %[range]\n\t" \
+		"inc	%[in_pos]\n" \
+		"1:\n\t"
+#endif
+
 /*
  * Decode one bit. In some versions, this function has been split in three
  * functions so that the compiler is supposed to be able to more easily avoid
@@ -620,18 +631,109 @@ static __always_inline int rc_bit(struct rc_dec *rc, uint16_t *prob)
 	return bit;
 }
 
+#ifdef XZ_ASM_X86_64
+	/*
+	 * RC_BIT_ASM does the initial steps from rc_bit(). Instead of "bound"
+	 * we have temporary variables t0 and t1:
+	 *
+	 *     t0 = range;
+	 *     range = (range >> RC_BIT_MODEL_TOTAL_BITS) * *prob;
+	 *     t0 -= range;
+	 *     t1 = code;
+	 *     code -= range;
+	 *     The carry flag has now been set if the decoded bit is 0.
+	 *
+	 * The code after this macro needs to do the following steps.
+	 * They aren't defined as macros because the instructions are
+	 * interleaved with other work.
+	 *
+	 *     If the bit is 0 (that is, carry flag is set):
+	 *         range is already correct.
+	 *         t0 = RC_BIT_MODEL_OFFSET + *prob;
+	 *     Else the bit is 1 (that is, carry flag is clear):
+	 *         range = t0;
+	 *         code is already correct.
+	 *         t0 = *prob;
+	 *
+	 *     *prob -= t0 >> RC_MOVE_BITS;
+	 *
+	 * In bittrees, speculatively loading the next two probability
+	 * variable candiates and picking the right one with CMOV would
+	 * improve speed a little more, but it's more complex code. Loop
+	 * unrolling would help too. Both are done in LZMA SDK and XZ Utils.
+	 */
+#	define RC_BIT_ASM \
+		"mov	%[range], %[t0]\n\t" \
+		"shr	%[bit_model_total_bits], %[range]\n\t" \
+		"imul	%[prob], %[range]\n\t" \
+		"sub	%[range], %[t0]\n\t" \
+		"mov	%[code], %[t1]\n\t" \
+		"sub	%[range], %[code]\n\t"
+#endif
+
 /* Decode a bittree starting from the most significant bit. */
 static __always_inline uint32_t rc_bittree(struct rc_dec *rc,
 					   uint16_t *probs, uint32_t limit)
 {
 	uint32_t symbol = 1;
 
+#ifdef XZ_ASM_X86_64
+	uint32_t t0;
+	uint32_t t1;
+	uint32_t t_prob;
+
+	__asm__(
+		"2:\n\t"
+		"movzw	(%[probs_base], %q[symbol], 2), %[prob]\n\t"
+
+		"add	%[symbol], %[symbol]\n\t"
+
+		RC_NORMALIZE_ASM
+		RC_BIT_ASM
+
+		"cmovae	%[t0], %[range]\n\t"
+		"lea	%c[bit_model_offset](%q[prob]), %[t0]\n\t"
+		"cmovb	%[t1], %[code]\n\t"
+		"mov	%[symbol], %[t1]\n\t"
+		"cmovae	%[prob], %[t0]\n\t"
+
+		"sbb	$-1, %[symbol]\n\t"
+
+		"shr	%[move_bits], %[t0]\n\t"
+		"sub	%[t0], %[prob]\n\t"
+
+		/* Scaling of 1 instead of 2 because symbol <<= 1. */
+		"mov	%w[prob], (%[probs_base], %q[t1], 1)\n\t"
+
+		"cmp	%[limit], %[symbol]\n\t"
+		"jb	2b"
+		:
+		[t0]        "=&r"(t0),
+		[t1]        "=&r"(t1),
+		[prob]      "=&r"(t_prob),
+		[in_pos]    "+&r"(rc->in_pos),
+		[range]     "+&r"(rc->range),
+		[code]      "+&r"(rc->code),
+		[symbol]    "+&r"(symbol)
+		:
+		[probs_base]           "r"(probs),
+		[in_ptr]               "r"(rc->in),
+		[limit]                "r"(limit),
+		[top_value]            "n"(RC_TOP_VALUE),
+		[shift_bits]           "n"(RC_SHIFT_BITS),
+		[bit_model_total_bits] "n"(RC_BIT_MODEL_TOTAL_BITS),
+		[bit_model_offset]     "n"(RC_BIT_MODEL_OFFSET),
+		[move_bits]            "n"(RC_MOVE_BITS)
+		:
+		"cc", "memory");
+#else
 	do {
 		if (rc_bit(rc, &probs[symbol]))
 			symbol = (symbol << 1) + 1;
 		else
 			symbol <<= 1;
 	} while (symbol < limit);
+#endif
 
 	return symbol;
 }
@@ -643,6 +745,54 @@ static __always_inline uint32_t rc_bittree_reverse(struct rc_dec *rc,
 {
 	uint32_t symbol = 1U << (limit - 1);
 	uint32_t add = 1U << limit;
+
+#ifdef XZ_ASM_X86_64
+	uint32_t t0;
+	uint32_t t1;
+	uint32_t t_prob;
+
+	__asm__(
+		"2:\n\t"
+		"movzw	(%[probs_base], %q[symbol], 2), %[prob]\n\t"
+
+		RC_NORMALIZE_ASM
+		RC_BIT_ASM
+
+		"cmovae	%[t0], %[range]\n\t"
+		"lea	(%q[symbol], %q[add]), %[t0]\n\t"
+		"cmovb	%[t1], %[code]\n\t"
+		"mov	%[symbol], %[t1]\n\t"
+		"cmovae	%[t0], %[symbol]\n\t"
+		"lea	%c[bit_model_offset](%q[prob]), %[t0]\n\t"
+		"cmovae	%[prob], %[t0]\n\t"
+
+		"shr	%[move_bits], %[t0]\n\t"
+		"sub	%[t0], %[prob]\n\t"
+
+		"mov	%w[prob], (%[probs_base], %q[t1], 2)\n\t"
+
+		"shr	$1, %[symbol]\n\t"
+		"jnc	2b\n\t"
+		:
+		[t0]          "=&r"(t0),
+		[t1]          "=&r"(t1),
+		[prob]        "=&r"(t_prob),
+		[in_pos]      "+&r"(rc->in_pos),
+		[range]       "+&r"(rc->range),
+		[code]        "+&r"(rc->code),
+		[symbol]      "+&r"(symbol),
+		[probs_base]  "+&r"(probs)
+		:
+		[in_ptr]               "r"(rc->in),
+		[add]                  "r"(add),
+		[top_value]            "n"(RC_TOP_VALUE),
+		[shift_bits]           "n"(RC_SHIFT_BITS),
+		[bit_model_total_bits] "n"(RC_BIT_MODEL_TOTAL_BITS),
+		[bit_model_offset]     "n"(RC_BIT_MODEL_OFFSET),
+		[move_bits]            "n"(RC_MOVE_BITS)
+		:
+		"cc", "memory");
+#else
 	uint32_t carry;
 
 	do {
@@ -652,6 +802,7 @@ static __always_inline uint32_t rc_bittree_reverse(struct rc_dec *rc,
 		carry = symbol & 1;
 		symbol >>= 1;
 	} while (!carry);
+#endif
 
 	return symbol;
 }
@@ -660,6 +811,36 @@ static __always_inline uint32_t rc_bittree_reverse(struct rc_dec *rc,
 static __always_inline void rc_direct(struct rc_dec *rc, uint32_t *dest,
 				      uint32_t limit)
 {
+#ifdef XZ_ASM_X86_64
+	uint32_t t0;
+
+	__asm__(
+		"2:\n\t"
+		"add	%[dest], %[dest]\n\t"
+
+		RC_NORMALIZE_ASM
+
+		"shr	$1, %[range]\n\t"
+		"mov	%[code], %[t0]\n\t"
+		"sub	%[range], %[code]\n\t"
+		"cmovs	%[t0], %[code]\n\t"
+		"sbb	$-1, %[dest]\n\t"
+		"dec	%[limit]\n\t"
+		"jnz	2b\n\t"
+		:
+		[t0]          "=&r"(t0),
+		[in_pos]      "+&r"(rc->in_pos),
+		[range]       "+&r"(rc->range),
+		[code]        "+&r"(rc->code),
+		[dest]        "+&r"(*dest),
+		[limit]       "+&r"(limit)
+		:
+		[in_ptr]      "r"(rc->in),
+		[top_value]   "n"(RC_TOP_VALUE),
+		[shift_bits]  "n"(RC_SHIFT_BITS)
+		:
+		"cc", "memory");
+#else
 	uint32_t mask;
 
 	do {
@@ -670,6 +851,7 @@ static __always_inline void rc_direct(struct rc_dec *rc, uint32_t *dest,
 		rc->code += rc->range & mask;
 		*dest = (*dest << 1) + (mask + 1);
 	} while (--limit > 0);
+#endif
 }
 
 /********
@@ -709,6 +891,71 @@ static __always_inline void lzma_literal(struct xz_dec_lzma2 *s,
 		match_byte = dict_get(dict, s->lzma.rep0) << 1;
 		offset = 0x100;
 
+#ifdef XZ_ASM_X86_64
+		uint32_t t0;
+		uint32_t t1;
+		uint32_t t_prob;
+
+		__asm__(
+			"2:\n\t"
+			"mov	%[match_byte], %[match_bit]\n\t"
+			"add	%[offset], %[symbol]\n\t"
+			"and	%[offset], %[match_bit]\n\t"
+			"add	%[match_bit], %[symbol]\n\t"
+
+			"movzw	(%[probs_base], %q[symbol], 2), %[prob]\n\t"
+			"xor	%[match_bit], %[offset]\n\t"
+
+			"add	%[symbol], %[symbol]\n\t"
+
+			RC_NORMALIZE_ASM
+			RC_BIT_ASM
+
+			"lea	(%q[match_byte], %q[match_byte]), %[match_byte]\n\t"
+			"cmovae	%[t0], %[range]\n\t"
+			"lea	%c[bit_model_offset](%q[prob]), %[t0]\n\t"
+			"cmovb	%[t1], %[code]\n\t"
+			"mov	%[symbol], %[t1]\n\t"
+			"cmovae	%[prob], %[t0]\n\t"
+
+			"cmovae	%[match_bit], %[offset]\n\t"
+
+			"sbb	$-1, %[symbol]\n\t"
+
+			"shr	%[move_bits], %[t0]\n\t"
+			/* Undo symbol += offset + match_bit: */
+			"and	%[mask], %[symbol]\n\t"
+			"sub	%[t0], %[prob]\n\t"
+
+			/* Scaling of 1 instead of 2 because symbol <<= 1. */
+			"mov	%w[prob], (%[probs_base], %q[t1], 1)\n\t"
+
+			"cmp	%[limit], %[symbol]\n\t"
+			"jb	2b"
+			:
+			[t0]          "=&r"(t0),
+			[t1]          "=&r"(t1),
+			[prob]        "=&r"(t_prob),
+			[in_pos]      "+&r"(rc->in_pos),
+			[range]       "+&r"(rc->range),
+			[code]        "+&r"(rc->code),
+			[symbol]      "+&r"(symbol),
+			[match_bit]   "=&r"(match_bit),
+			[match_byte]  "+&r"(match_byte),
+			[offset]      "+&r"(offset)
+			:
+			[probs_base]           "r"(probs),
+			[in_ptr]               "r"(rc->in),
+			[limit]                "n"(0x100),
+			[mask]                 "n"(0x1FF),
+			[top_value]            "n"(RC_TOP_VALUE),
+			[shift_bits]           "n"(RC_SHIFT_BITS),
+			[bit_model_total_bits] "n"(RC_BIT_MODEL_TOTAL_BITS),
+			[bit_model_offset]     "n"(RC_BIT_MODEL_OFFSET),
+			[move_bits]            "n"(RC_MOVE_BITS)
+			:
+			"cc", "memory");
+#else
 		do {
 			match_bit = match_byte & offset;
 			match_byte <<= 1;
@@ -721,6 +968,7 @@ static __always_inline void lzma_literal(struct xz_dec_lzma2 *s,
 				offset &= ~match_bit;
 			}
 		} while (symbol < 0x100);
+#endif
 	}
 
 	dict_put(dict, (uint8_t)symbol);
