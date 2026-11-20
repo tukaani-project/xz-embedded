@@ -602,16 +602,19 @@ static inline void rc_direct(struct rc_dec *rc, uint32_t *dest, uint32_t limit)
  ********/
 
 /* Get pointer to literal coder probability array. */
-static uint16_t *lzma_literal_probs(struct xz_dec_lzma2 *s)
+static uint16_t *lzma_literal_probs(struct xz_dec_lzma2 *s,
+				    const struct dictionary *dict)
 {
-	uint32_t prev_byte = dict_get(&s->dict, 0);
+	uint32_t prev_byte = dict_get(dict, 0);
 	uint32_t low = prev_byte >> (8 - s->lzma.lc);
-	uint32_t high = (s->dict.pos & s->lzma.literal_pos_mask) << s->lzma.lc;
+	uint32_t high = (dict->pos & s->lzma.literal_pos_mask) << s->lzma.lc;
 	return s->lzma.literal[low + high];
 }
 
 /* Decode a literal (one 8-bit byte) */
-static void lzma_literal(struct xz_dec_lzma2 *s, struct rc_dec *rc)
+static void lzma_literal(struct xz_dec_lzma2 *s,
+			 struct rc_dec *rc,
+			 struct dictionary *dict)
 {
 	uint16_t *probs;
 	uint32_t symbol;
@@ -620,13 +623,13 @@ static void lzma_literal(struct xz_dec_lzma2 *s, struct rc_dec *rc)
 	uint32_t offset;
 	uint32_t i;
 
-	probs = lzma_literal_probs(s);
+	probs = lzma_literal_probs(s, dict);
 
 	if (lzma_state_is_literal(s->lzma.state)) {
 		symbol = rc_bittree(rc, probs, 0x100);
 	} else {
 		symbol = 1;
-		match_byte = dict_get(&s->dict, s->lzma.rep0) << 1;
+		match_byte = dict_get(dict, s->lzma.rep0) << 1;
 		offset = 0x100;
 
 		do {
@@ -644,7 +647,7 @@ static void lzma_literal(struct xz_dec_lzma2 *s, struct rc_dec *rc)
 		} while (symbol < 0x100);
 	}
 
-	dict_put(&s->dict, (uint8_t)symbol);
+	dict_put(dict, (uint8_t)symbol);
 	lzma_state_literal(&s->lzma.state);
 }
 
@@ -760,32 +763,33 @@ static void lzma_rep_match(struct xz_dec_lzma2 *s,
 static bool lzma_main(struct xz_dec_lzma2 *s)
 {
 	struct rc_dec rc = s->rc;
+	struct dictionary dict = s->dict;
 	uint32_t pos_state;
 
 	/*
 	 * If the dictionary write limit was reached during the previous call,
 	 * try to finish the possibly pending repeat in the dictionary.
 	 */
-	if (dict_has_space(&s->dict) && s->lzma.len > 0)
-		dict_repeat(&s->dict, &s->lzma.len, s->lzma.rep0);
+	if (dict_has_space(&dict) && s->lzma.len > 0)
+		dict_repeat(&dict, &s->lzma.len, s->lzma.rep0);
 
 	/*
 	 * Decode more LZMA symbols. One iteration may consume up to
 	 * LZMA_IN_REQUIRED - 1 bytes.
 	 */
-	while (dict_has_space(&s->dict) && !rc_limit_exceeded(&rc)) {
-		pos_state = s->dict.pos & s->lzma.pos_mask;
+	while (dict_has_space(&dict) && !rc_limit_exceeded(&rc)) {
+		pos_state = dict.pos & s->lzma.pos_mask;
 
 		if (!rc_bit(&rc, &s->lzma.is_match[
 				s->lzma.state][pos_state])) {
-			lzma_literal(s, &rc);
+			lzma_literal(s, &rc, &dict);
 		} else {
 			if (rc_bit(&rc, &s->lzma.is_rep[s->lzma.state]))
 				lzma_rep_match(s, &rc, pos_state);
 			else
 				lzma_match(s, &rc, pos_state);
 
-			if (!dict_repeat(&s->dict, &s->lzma.len, s->lzma.rep0))
+			if (!dict_repeat(&dict, &s->lzma.len, s->lzma.rep0))
 				return false;
 		}
 	}
@@ -803,6 +807,8 @@ static bool lzma_main(struct xz_dec_lzma2 *s)
 	s->rc.range = rc.range;
 	s->rc.code = rc.code;
 	s->rc.in_pos = rc.in_pos;
+	s->dict.pos = dict.pos;
+	s->dict.full = dict.full;
 	return true;
 }
 
