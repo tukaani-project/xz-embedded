@@ -22,9 +22,10 @@ COMMON_OBJS = $(COMMON_SRCS:.c=.o)
 XZMINIDEC_OBJS = xzminidec.o
 BYTETEST_OBJS = bytetest.o
 BUFTEST_OBJS = buftest.o
+BENCH_OBJS = bench.o
 BOOTTEST_OBJS = boottest.o
 XZ_HEADERS = xz.h xz_private.h xz_stream.h xz_lzma2.h xz_config.h
-PROGRAMS = xzminidec bytetest buftest boottest
+PROGRAMS = xzminidec bytetest buftest bench boottest
 
 ALL_CPPFLAGS = -I../linux/include/linux -I. $(BCJ_CPPFLAGS) $(CPPFLAGS)
 
@@ -42,10 +43,13 @@ bytetest: $(COMMON_OBJS) $(BYTETEST_OBJS)
 buftest: $(COMMON_OBJS) $(BUFTEST_OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(COMMON_OBJS) $(BUFTEST_OBJS)
 
+bench: $(COMMON_OBJS) $(BENCH_OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(COMMON_OBJS) $(BENCH_OBJS)
+
 boottest: $(BOOTTEST_OBJS) $(COMMON_SRCS)
 	$(CC) $(ALL_CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(BOOTTEST_OBJS)
 
 .PHONY: clean
 clean:
 	-$(RM) $(COMMON_OBJS) $(XZMINIDEC_OBJS) $(BYTETEST_OBJS) \
-		$(BUFTEST_OBJS) $(BOOTTEST_OBJS) $(PROGRAMS)
+		$(BUFTEST_OBJS) $(BENCH_OBJS) $(BOOTTEST_OBJS) $(PROGRAMS)
