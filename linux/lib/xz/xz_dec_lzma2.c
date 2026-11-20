@@ -311,7 +311,7 @@ static void dict_limit(struct dictionary *dict, size_t out_max)
 }
 
 /* Return true if at least one byte can be written into the dictionary. */
-static inline bool dict_has_space(const struct dictionary *dict)
+static __always_inline bool dict_has_space(const struct dictionary *dict)
 {
 	return dict->pos < dict->limit;
 }
@@ -322,7 +322,8 @@ static inline bool dict_has_space(const struct dictionary *dict)
  * still empty. This special case is needed for single-call decoding to
  * avoid writing a '\0' to the end of the destination buffer.
  */
-static inline uint32_t dict_get(const struct dictionary *dict, size_t dist)
+static __always_inline uint32_t dict_get(const struct dictionary *dict,
+					 size_t dist)
 {
 	size_t offset = dict->pos - dist - 1;
 
@@ -335,7 +336,8 @@ static inline uint32_t dict_get(const struct dictionary *dict, size_t dist)
 /*
  * Put one byte into the dictionary. It is assumed that there is space for it.
  */
-static inline void dict_put(struct dictionary *restrict dict, uint8_t byte)
+static __always_inline void dict_put(struct dictionary *restrict dict,
+				     uint8_t byte)
 {
 	dict->buf[dict->pos++] = byte;
 
@@ -494,7 +496,7 @@ static bool rc_read_init(struct rc_dec *rc, struct xz_buf *b)
 }
 
 /* Return true if there may not be enough input for the next decoding loop. */
-static inline bool rc_limit_exceeded(const struct rc_dec *rc)
+static __always_inline bool rc_limit_exceeded(const struct rc_dec *rc)
 {
 	return rc->in_pos > rc->in_limit;
 }
@@ -503,7 +505,7 @@ static inline bool rc_limit_exceeded(const struct rc_dec *rc)
  * Return true if it is possible (from point of view of range decoder) that
  * we have reached the end of the LZMA chunk.
  */
-static inline bool rc_is_finished(const struct rc_dec *rc)
+static __always_inline bool rc_is_finished(const struct rc_dec *rc)
 {
 	return rc->code == 0;
 }
@@ -584,7 +586,8 @@ static __always_inline void rc_bittree_reverse(struct rc_dec *rc,
 }
 
 /* Decode direct bits (fixed fifty-fifty probability) */
-static inline void rc_direct(struct rc_dec *rc, uint32_t *dest, uint32_t limit)
+static __always_inline void rc_direct(struct rc_dec *rc, uint32_t *dest,
+				      uint32_t limit)
 {
 	uint32_t mask;
 
@@ -603,7 +606,7 @@ static inline void rc_direct(struct rc_dec *rc, uint32_t *dest, uint32_t limit)
  ********/
 
 /* Get pointer to literal coder probability array. */
-static uint16_t *lzma_literal_probs(struct xz_dec_lzma2 *s)
+static __always_inline uint16_t *lzma_literal_probs(struct xz_dec_lzma2 *s)
 {
 	uint32_t prev_byte = dict_get(&s->dict, 0);
 	uint32_t low = prev_byte >> (8 - s->lzma.lc);
@@ -612,7 +615,8 @@ static uint16_t *lzma_literal_probs(struct xz_dec_lzma2 *s)
 }
 
 /* Decode a literal (one 8-bit byte) */
-static void lzma_literal(struct xz_dec_lzma2 *s, struct rc_dec *rc)
+static __always_inline void lzma_literal(struct xz_dec_lzma2 *s,
+					 struct rc_dec *rc)
 {
 	uint16_t *probs;
 	uint32_t symbol;
@@ -679,9 +683,9 @@ static __always_inline void lzma_len(struct xz_dec_lzma2 *s,
 }
 
 /* Decode a match. The distance will be stored in s->lzma.rep0. */
-static void lzma_match(struct xz_dec_lzma2 *s,
-		       struct rc_dec *rc,
-		       uint32_t pos_state)
+static __always_inline void lzma_match(struct xz_dec_lzma2 *s,
+				       struct rc_dec *rc,
+				       uint32_t pos_state)
 {
 	uint16_t *probs;
 	uint32_t dist_slot;
@@ -722,9 +726,9 @@ static void lzma_match(struct xz_dec_lzma2 *s,
  * Decode a repeated match. The distance is one of the four most recently
  * seen matches. The distance will be stored in s->lzma.rep0.
  */
-static void lzma_rep_match(struct xz_dec_lzma2 *s,
-			   struct rc_dec *rc,
-			   uint32_t pos_state)
+static __always_inline void lzma_rep_match(struct xz_dec_lzma2 *s,
+					   struct rc_dec *rc,
+					   uint32_t pos_state)
 {
 	uint32_t tmp;
 
