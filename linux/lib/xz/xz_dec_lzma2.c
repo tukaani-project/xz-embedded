@@ -354,8 +354,8 @@ static __always_inline void dict_put(struct dictionary *restrict dict,
  * invalid, false is returned. On success, true is returned and *len is
  * updated to indicate how many bytes were left to be repeated.
  */
-static bool dict_repeat(struct dictionary *restrict dict,
-			size_t *restrict len, size_t dist)
+static __always_inline bool dict_repeat(struct dictionary *restrict dict,
+					size_t *restrict len, size_t dist)
 {
 	size_t back;
 	size_t left;
