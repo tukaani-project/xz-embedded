@@ -653,8 +653,9 @@ static void lzma_literal(struct xz_dec_lzma2 *s)
 }
 
 /* Decode the length of the match into s->lzma.len. */
-static void lzma_len(struct xz_dec_lzma2 *s, struct lzma_len_dec *l,
-		     uint32_t pos_state)
+static __always_inline void lzma_len(struct xz_dec_lzma2 *s,
+				     struct lzma_len_dec *l,
+				     uint32_t pos_state)
 {
 	uint16_t *probs;
 	uint32_t limit;
