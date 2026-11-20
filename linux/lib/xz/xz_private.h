@@ -51,6 +51,9 @@
 #	ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
 #		define XZ_USE_UNALIGNED
 #	endif
+#	ifdef CONFIG_X86_64
+#		define XZ_ASM_X86_64
+#	endif
 #	define get_le32(p) le32_to_cpup((const uint32_t *)(p))
 #else
 	/*
