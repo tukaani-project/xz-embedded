@@ -10,6 +10,10 @@
 #include "xz_private.h"
 #include "xz_lzma2.h"
 
+#if defined(__GNUC__) && !defined(__clang__)
+#	pragma GCC optimize("strict-aliasing")
+#endif
+
 /*
  * Range decoder initialization eats the first five bytes of each LZMA chunk.
  */
