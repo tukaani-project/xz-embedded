@@ -1,0 +1,3 @@
+add_executable(xz_roundtrip_test xz_roundtrip_test.c)
+target_link_libraries(xz_roundtrip_test PRIVATE xz)
+add_test(NAME xz_roundtrip COMMAND xz_roundtrip_test)
